@@ -5390,31 +5390,47 @@ try {
               .eq("id", insertedCase.id);
           }
         } catch (err) {
-          console.error("SAVE HELP REQUEST FAILED:", err);
-          if (err && err.code === "INCOMPLETE_HELP_FORM") {
-            const missingText = Array.isArray(err.missing) ? err.missing.join(" / ") : "ชื่อ / พื้นที่ / รายละเอียด / เบอร์";
-            await safeReply(
-              replyToken,
-              [
-                buildHelpFormFlex(),
-                {
-                  type: "text",
-                  text:
-                    "กรุณากรอกข้อมูลให้ครบก่อนส่ง\n" +
-                    `ยังขาด: ${missingText}\n\n` +
-                    'กดปุ่ม "กรอกข้อมูลตามนี้" อีกครั้ง หรือพิมพ์ข้อมูลต่อจากข้อความเดิมได้เลย',
-                },
-              ]
-            );
-          } else {
-            await safeReply(replyToken, [
-              {
-                type: "text",
-                text: "บันทึกข้อมูลไม่สำเร็จครับ กรุณาลองใหม่อีกครั้ง",
-              },
-            ]);
-          }
-        }
+  console.error("SAVE HELP REQUEST FAILED:", err);
+
+  if (err && err.code === "INCOMPLETE_HELP_FORM") {
+    const normalizedText = String(text || "").split("\r").join("").trim();
+
+    const isTemplateOnly =
+      /^ชื่อ\s*:\s*\nพื้นที่\s*:\s*\nรายละเอียด\s*:\s*\nเบอร์\s*:\s*$/i.test(normalizedText) ||
+      /^ชื่อ\s*:\s*พื้นที่\s*:\s*รายละเอียด\s*:\s*เบอร์\s*:\s*$/i.test(normalizedText);
+
+    if (isTemplateOnly) {
+      // ผู้ใช้เพิ่งกดปุ่ม "กรอกข้อมูลตามนี้"
+      // ยังไม่ต้องเตือน error ให้รอผู้ใช้พิมพ์ข้อมูลจริงก่อน
+      continue;
+    }
+
+    const missingText = Array.isArray(err.missing)
+      ? err.missing.join(" / ")
+      : "ชื่อ / พื้นที่ / รายละเอียด / เบอร์";
+
+    await safeReply(
+      replyToken,
+      [
+        buildHelpFormFlex(),
+        {
+          type: "text",
+          text:
+            "กรุณากรอกข้อมูลให้ครบก่อนส่ง\n" +
+            `ยังขาด: ${missingText}\n\n` +
+            'กดปุ่ม "กรอกข้อมูลตามนี้" อีกครั้ง หรือพิมพ์ข้อมูลต่อจากข้อความเดิมได้เลย',
+        },
+      ]
+    );
+  } else {
+    await safeReply(replyToken, [
+      {
+        type: "text",
+        text: "บันทึกข้อมูลไม่สำเร็จครับ กรุณาลองใหม่อีกครั้ง",
+      },
+    ]);
+  }
+}
         continue;
       }
 
