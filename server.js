@@ -1932,6 +1932,15 @@ function buildHelpRequestChoiceFlex() {
 }
 
 function buildHelpFormFlex() {
+  const primaryAction = {
+    type: "message",
+    label: "กรอกข้อมูลตามนี้",
+    text: `ชื่อ:
+พื้นที่:
+รายละเอียด:
+เบอร์:`
+  };
+
   return {
     type: "flex",
     altText: "แบบฟอร์มขอความช่วยเหลือ",
@@ -1944,59 +1953,48 @@ function buildHelpFormFlex() {
         backgroundColor: "#0b7c86",
         paddingAll: "16px",
         contents: [
-          {
-            type: "text",
-            text: "แบบฟอร์มขอความช่วยเหลือ",
-            color: "#ffffff",
-            weight: "bold",
-            size: "lg"
-          },
-          {
-            type: "text",
-            text: "กรุณากรอกข้อมูลตามตัวอย่างด้านล่าง",
-            color: "#d9f3f5",
-            size: "sm",
-            margin: "sm"
-          }
+          { type: "text", text: "แบบฟอร์มขอความช่วยเหลือ", color: "#ffffff", weight: "bold", size: "lg", align: "center" },
+          { type: "text", text: "กรุณากรอกข้อมูลตามตัวอย่างด้านล่าง", color: "#d9f3f5", size: "sm", margin: "sm", wrap: true, align: "center" }
         ]
       },
       body: {
         type: "box",
         layout: "vertical",
-        paddingAll: "18px",
+        spacing: "lg",
+        paddingAll: "20px",
         contents: [
           {
+            type: "box",
+            layout: "vertical",
+            backgroundColor: "#F9FAFB",
+            cornerRadius: "12px",
+            paddingAll: "16px",
+            spacing: "md",
+            contents: [
+              { type: "text", text: "ชื่อ:", weight: "bold", size: "sm" },
+              { type: "text", text: "พื้นที่:", weight: "bold", size: "sm" },
+              { type: "text", text: "รายละเอียด:", weight: "bold", size: "sm" },
+              { type: "text", text: "เบอร์:", weight: "bold", size: "sm" }
+            ]
+          },
+          {
             type: "text",
-            text: "ชื่อ:\nพื้นที่:\nรายละเอียด:\nเบอร์:",
+            text: "กดปุ่มด้านล่างเพื่อเปิดช่องพิมพ์พร้อมหัวข้อฟอร์ม",
+            size: "sm",
+            color: "#6B7280",
             wrap: true,
-            size: "sm"
+            align: "center"
           }
         ]
       },
       footer: {
         type: "box",
         layout: "vertical",
-        spacing: "md",
+        spacing: "sm",
+        paddingAll: "16px",
         contents: [
-          {
-            type: "button",
-            style: "primary",
-            color: "#0b7c86",
-            action: {
-              type: "message",
-              label: "กรอกข้อมูลตามนี้",
-              text: "ชื่อ:\nพื้นที่:\nรายละเอียด:\nเบอร์:"
-            }
-          },
-          {
-            type: "button",
-            style: "secondary",
-            action: {
-              type: "message",
-              label: "กลับไปเลือกประเภท",
-              text: "เมนู"
-            }
-          }
+          { type: "button", style: "primary", height: "sm", color: "#0b7c86", action: primaryAction },
+          { type: "button", style: "secondary", height: "sm", action: { type: "message", label: "กลับไปเลือกประเภท", text: "ขอความช่วยเหลือ" } }
         ]
       }
     }
