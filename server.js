@@ -1932,8 +1932,7 @@ function buildHelpRequestChoiceFlex() {
 }
 
 function buildHelpFormFlex() {
-  const useUri = LINE_OA_ID && LINE_OA_ID.startsWith("@");
-
+ const useUri = false;
   const primaryAction = useUri
     ? {
         type: "uri",
