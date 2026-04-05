@@ -1932,14 +1932,82 @@ function buildHelpRequestChoiceFlex() {
 }
 
 function buildHelpFormFlex() {
-  const primaryAction = {
-    type: "message",
-    label: "กรอกข้อมูลตามนี้",
-    text: "ชื่อ:
-พื้นที่:
-รายละเอียด:
-เบอร์:"
-  };
+  const useUri = LINE_OA_ID && LINE_OA_ID.startsWith("@");
+
+  const primaryAction = useUri
+    ? {
+        type: "uri",
+        label: "กรอกข้อมูลตามนี้",
+        uri: `https://line.me/R/oaMessage/${encodeURIComponent(LINE_OA_ID)}/?${encodeURIComponent("ชื่อ: ")}`
+      }
+    : {
+        type: "postback",
+        label: "กรอกข้อมูลตามนี้",
+        data: "help_form=open",
+        displayText: "กรอกข้อมูลขอความช่วยเหลือ",
+        inputOption: "openKeyboard",
+        fillInText: "ชื่อ: "
+      };
+
+  const nameAction = useUri
+    ? {
+        type: "uri",
+        label: "ชื่อ-สกุล",
+        uri: `https://line.me/R/oaMessage/${encodeURIComponent(LINE_OA_ID)}/?${encodeURIComponent("ชื่อ: ")}`
+      }
+    : {
+        type: "postback",
+        label: "ชื่อ-สกุล",
+        data: "help_form=name",
+        displayText: "กรอกชื่อ-สกุล",
+        inputOption: "openKeyboard",
+        fillInText: "ชื่อ: "
+      };
+
+  const locationAction = useUri
+    ? {
+        type: "uri",
+        label: "พื้นที่",
+        uri: `https://line.me/R/oaMessage/${encodeURIComponent(LINE_OA_ID)}/?${encodeURIComponent("พื้นที่: ")}`
+      }
+    : {
+        type: "postback",
+        label: "พื้นที่",
+        data: "help_form=location",
+        displayText: "กรอกพื้นที่",
+        inputOption: "openKeyboard",
+        fillInText: "พื้นที่: "
+      };
+
+  const problemAction = useUri
+    ? {
+        type: "uri",
+        label: "รายละเอียด",
+        uri: `https://line.me/R/oaMessage/${encodeURIComponent(LINE_OA_ID)}/?${encodeURIComponent("รายละเอียด: ")}`
+      }
+    : {
+        type: "postback",
+        label: "รายละเอียด",
+        data: "help_form=problem",
+        displayText: "กรอกรายละเอียดปัญหา",
+        inputOption: "openKeyboard",
+        fillInText: "รายละเอียด: "
+      };
+
+  const phoneAction = useUri
+    ? {
+        type: "uri",
+        label: "เบอร์โทร",
+        uri: `https://line.me/R/oaMessage/${encodeURIComponent(LINE_OA_ID)}/?${encodeURIComponent("เบอร์: ")}`
+      }
+    : {
+        type: "postback",
+        label: "เบอร์โทร",
+        data: "help_form=phone",
+        displayText: "กรอกเบอร์โทร",
+        inputOption: "openKeyboard",
+        fillInText: "เบอร์: "
+      };
 
   return {
     type: "flex",
@@ -1953,14 +2021,29 @@ function buildHelpFormFlex() {
         backgroundColor: "#0b7c86",
         paddingAll: "16px",
         contents: [
-          { type: "text", text: "แบบฟอร์มขอความช่วยเหลือ", color: "#ffffff", weight: "bold", size: "lg", align: "center" },
-          { type: "text", text: "กรุณากรอกข้อมูลตามตัวอย่างด้านล่าง", color: "#d9f3f5", size: "sm", margin: "sm", wrap: true, align: "center" }
+          {
+            type: "text",
+            text: "แบบฟอร์มขอความช่วยเหลือ",
+            color: "#ffffff",
+            weight: "bold",
+            size: "lg",
+            align: "center"
+          },
+          {
+            type: "text",
+            text: "กดปุ่มแล้วระบบจะเด้งหัวข้อให้พิมพ์ต่อได้ทันที",
+            color: "#d9f3f5",
+            size: "sm",
+            margin: "sm",
+            wrap: true,
+            align: "center"
+          }
         ]
       },
       body: {
         type: "box",
         layout: "vertical",
-        spacing: "lg",
+        spacing: "md",
         paddingAll: "20px",
         contents: [
           {
@@ -1968,21 +2051,69 @@ function buildHelpFormFlex() {
             layout: "vertical",
             backgroundColor: "#F9FAFB",
             cornerRadius: "12px",
-            paddingAll: "16px",
-            spacing: "md",
+            paddingAll: "14px",
+            spacing: "sm",
             contents: [
-              { type: "text", text: "ชื่อ:", weight: "bold", size: "sm" },
-              { type: "text", text: "พื้นที่:", weight: "bold", size: "sm" },
-              { type: "text", text: "รายละเอียด:", weight: "bold", size: "sm" },
-              { type: "text", text: "เบอร์:", weight: "bold", size: "sm" }
+              { type: "text", text: "กรอกให้ครบ 4 รายการ", weight: "bold", size: "sm", color: "#16324F" },
+              { type: "text", text: "1) ชื่อ", size: "sm", color: "#374151" },
+              { type: "text", text: "2) พื้นที่", size: "sm", color: "#374151" },
+              { type: "text", text: "3) รายละเอียด", size: "sm", color: "#374151" },
+              { type: "text", text: "4) เบอร์โทร", size: "sm", color: "#374151" }
+            ]
+          },
+          {
+            type: "button",
+            style: "primary",
+            height: "sm",
+            color: "#0B7C86",
+            action: primaryAction
+          },
+          {
+            type: "separator",
+            margin: "sm"
+          },
+          {
+            type: "box",
+            layout: "vertical",
+            spacing: "sm",
+            contents: [
+              {
+                type: "button",
+                style: "primary",
+                height: "sm",
+                color: "#0B7C86",
+                action: nameAction
+              },
+              {
+                type: "button",
+                style: "primary",
+                height: "sm",
+                color: "#163C72",
+                action: locationAction
+              },
+              {
+                type: "button",
+                style: "primary",
+                height: "sm",
+                color: "#F59E0B",
+                action: problemAction
+              },
+              {
+                type: "button",
+                style: "primary",
+                height: "sm",
+                color: "#1F8F4D",
+                action: phoneAction
+              }
             ]
           },
           {
             type: "text",
-            text: "กดปุ่มด้านล่างเพื่อส่งหัวข้อฟอร์มเข้าแชท แล้วพิมพ์ข้อมูลต่อท้ายได้เลย",
-            size: "sm",
+            text: "ตัวอย่าง: ชื่อ: นายสมชาย ใจดี",
+            size: "xs",
             color: "#6B7280",
             wrap: true,
+            margin: "md",
             align: "center"
           }
         ]
@@ -1993,8 +2124,16 @@ function buildHelpFormFlex() {
         spacing: "sm",
         paddingAll: "16px",
         contents: [
-          { type: "button", style: "primary", height: "sm", color: "#0b7c86", action: primaryAction },
-          { type: "button", style: "secondary", height: "sm", action: { type: "message", label: "กลับไปเลือกประเภท", text: "ขอความช่วยเหลือ" } }
+          {
+            type: "button",
+            style: "secondary",
+            height: "sm",
+            action: {
+              type: "message",
+              label: "กลับไปเลือกประเภท",
+              text: "ขอความช่วยเหลือ"
+            }
+          }
         ]
       }
     }
