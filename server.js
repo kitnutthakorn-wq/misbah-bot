@@ -3569,32 +3569,58 @@ function buildUserCaseReceivedFlex(item = {}) {
 }
 
 async function saveHelpRequest(userId, text) {
-  const full_name = extractHelpFormValue(text, "ชื่อ");
-  const location = extractHelpFormValue(text, "พื้นที่");
-  const problem = extractHelpFormValue(text, "รายละเอียด");
-  const phone = extractHelpFormValue(text, "เบอร์");
+  const normalizedText = String(text || "").split("\r").join("").trim();
+
+  const full_name = extractHelpFormValue(normalizedText, "ชื่อ");
+  const location = extractHelpFormValue(normalizedText, "พื้นที่");
+  const problem = extractHelpFormValue(normalizedText, "รายละเอียด");
+  const phone =
+    extractHelpFormValue(normalizedText, "เบอร์") ||
+    extractHelpFormValue(normalizedText, "เบอร์โทร") ||
+    extractHelpFormValue(normalizedText, "โทร");
+
+  const fields = {
+    full_name: String(full_name || "").trim(),
+    location: String(location || "").trim(),
+    problem: String(problem || "").trim(),
+    phone: String(phone || "").trim()
+  };
 
   const missing = [];
-  if (!full_name) missing.push("ชื่อ");
-  if (!location) missing.push("พื้นที่");
-  if (!problem) missing.push("รายละเอียด");
-  if (!phone) missing.push("เบอร์");
+  if (!fields.full_name) missing.push("ชื่อ");
+  if (!fields.location) missing.push("พื้นที่");
+  if (!fields.problem) missing.push("รายละเอียด");
+  if (!fields.phone) missing.push("เบอร์");
+
+  const hasOnlyTemplate =
+    looksLikeHelpFormText(normalizedText) &&
+    !fields.full_name &&
+    !fields.location &&
+    !fields.problem &&
+    !fields.phone;
 
   if (missing.length > 0) {
-    const error = new Error("INCOMPLETE_HELP_FORM");
+    const error = new Error(
+      hasOnlyTemplate ? "EMPTY_HELP_FORM_TEMPLATE" : "INCOMPLETE_HELP_FORM"
+    );
     error.code = "INCOMPLETE_HELP_FORM";
     error.missing = missing;
+    error.is_template_only = hasOnlyTemplate;
+    error.form_values = fields;
     throw error;
   }
 
-  const lowerText = text.toLowerCase();
+  const lowerText = normalizedText.toLowerCase();
   let priority = "normal";
 
   if (
     lowerText.includes("ด่วน") ||
     lowerText.includes("ฉุกเฉิน") ||
     lowerText.includes("ไม่มีอาหาร") ||
-    lowerText.includes("ไม่มีที่อยู่")
+    lowerText.includes("ไม่มีที่อยู่") ||
+    lowerText.includes("ไฟไหม้") ||
+    lowerText.includes("น้ำท่วม") ||
+    lowerText.includes("ป่วยหนัก")
   ) {
     priority = "urgent";
   }
@@ -3607,14 +3633,14 @@ async function saveHelpRequest(userId, text) {
       {
         case_code,
         line_user_id: userId || "",
-        full_name,
-        phone,
-        location,
-        problem,
+        full_name: fields.full_name,
+        phone: fields.phone,
+        location: fields.location,
+        problem: fields.problem,
         status: "new",
         priority,
-        notify_status: "pending",
-      },
+        notify_status: "pending"
+      }
     ])
     .select()
     .single();
@@ -3624,10 +3650,16 @@ async function saveHelpRequest(userId, text) {
     throw error;
   }
 
-  broadcastSse("case_created", { case_id: data.id, case_code: data.case_code, priority: data.priority, status: data.status, full_name: data.full_name });
+  broadcastSse("case_created", {
+    case_id: data.id,
+    case_code: data.case_code,
+    priority: data.priority,
+    status: data.status,
+    full_name: data.full_name
+  });
+
   return data;
 }
-
 async function getNewCases(limit = 10) {
   const { data, error } = await supabase
     .from("help_requests")
