@@ -3455,15 +3455,14 @@ async function saveHelpRequest(userId, text) {
     .from("help_requests")
     .insert([
       {
-        case_code,
-        line_user_id: userId || "",
-        full_name,
-        phone,
-        location,
-        problem,
-        status: "new",
-        priority,
-        notify_status: "pending",
+         case_code,
+  full_name,
+  phone,
+  location,
+  problem,
+  status: "new",
+  priority,
+  notify_status: "pending",
       },
     ])
     .select()
