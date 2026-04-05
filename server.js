@@ -116,7 +116,14 @@ async function saveHelpRequestFromState(userId, payload = {}) {
   const location = String(payload.location || "").trim();
   const problem = String(payload.problem || "").trim();
   const phone = String(payload.phone || "").trim();
-
+console.log("🔥 SAVE DEBUG:", {
+  userId,
+  payload,
+  full_name,
+  location,
+  problem,
+  phone
+});
   const missing = [];
   if (!full_name) missing.push("ชื่อ");
   if (!location) missing.push("พื้นที่");
