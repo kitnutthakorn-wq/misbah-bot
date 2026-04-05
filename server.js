@@ -5063,20 +5063,204 @@ if (/^ติดตามอีกครั้ง\s+/i.test(text)) {
   continue;
 }
 
-
-if (text === "ขอความช่วยเหลือ") {
-  await safeReply(replyToken, [buildHelpRequestChoiceFlex()]);
-  continue;
-}
 if (text === "ขอความช่วยเหลือ") {
   await safeReply(replyToken, [buildHelpRequestChoiceFlex()]);
   continue;
 }
 
-// ✅ วาง STEP FLOW ตรงนี้เลย
+// ✅ STEP FLOW วางตรงนี้
+const helpState = getHelpRequestState(userId);
+
+if (text === "ขอความช่วยเหลือครั้งแรก") {
+  setHelpRequestState(userId, {
+    step: "waiting_name",
+    data: {}
+  });
+
+  await safeReply(replyToken, [
+    {
+      type: "text",
+      text:
+        "เริ่มกรอกข้อมูลขอความช่วยเหลือครับ\n\n" +
+        "ขอชื่อผู้ขอความช่วยเหลือก่อนครับ\n" +
+        "พิมพ์ 'ยกเลิก' ได้ทุกเมื่อหากต้องการหยุดฟอร์ม"
+    }
+  ]);
+  continue;
+}
+
+if (isTemplateOnlyHelpForm(text)) {
+  setHelpRequestState(userId, {
+    step: "waiting_name",
+    data: {}
+  });
+
+  await safeReply(replyToken, [
+    {
+      type: "text",
+      text:
+        "เริ่มกรอกข้อมูลขอความช่วยเหลือครับ\n\n" +
+        "ขอชื่อผู้ขอความช่วยเหลือก่อนครับ\n" +
+        "พิมพ์ 'ยกเลิก' ได้ทุกเมื่อหากต้องการหยุดฟอร์ม"
+    }
+  ]);
+  continue;
+}
+
+if (helpState) {
+  if (text === "ยกเลิก" || text === "ยกเลิกฟอร์ม") {
+    clearHelpRequestState(userId);
+    await safeReply(replyToken, [
+      {
+        type: "text",
+        text: "ยกเลิกการกรอกข้อมูลแล้วครับ\nพิมพ์ 'ขอความช่วยเหลือ' เพื่อเริ่มใหม่ได้ทุกเมื่อ"
+      }
+    ]);
+    continue;
+  }
+
+  if (helpState.step === "waiting_name") {
+    const value = text.trim();
+    if (!value) {
+      await safeReply(replyToken, [
+        { type: "text", text: "กรุณาพิมพ์ชื่อผู้ขอความช่วยเหลือครับ" }
+      ]);
+      continue;
+    }
+
+    const nextData = {
+      ...helpState.data,
+      full_name: value
+    };
+
+    setHelpRequestState(userId, {
+      step: "waiting_location",
+      data: nextData
+    });
+
+    await safeReply(replyToken, [
+      { type: "text", text: buildHelpStepText("location", nextData) }
+    ]);
+    continue;
+  }
+
+  if (helpState.step === "waiting_location") {
+    const value = text.trim();
+    if (!value) {
+      await safeReply(replyToken, [
+        { type: "text", text: "กรุณาพิมพ์พื้นที่ / จังหวัด / จุดเกิดเหตุครับ" }
+      ]);
+      continue;
+    }
+
+    const nextData = {
+      ...helpState.data,
+      location: value
+    };
+
+    setHelpRequestState(userId, {
+      step: "waiting_problem",
+      data: nextData
+    });
+
+    await safeReply(replyToken, [
+      { type: "text", text: buildHelpStepText("problem", nextData) }
+    ]);
+    continue;
+  }
+
+  if (helpState.step === "waiting_problem") {
+    const value = text.trim();
+    if (!value) {
+      await safeReply(replyToken, [
+        { type: "text", text: "กรุณาพิมพ์รายละเอียดปัญหาที่ต้องการความช่วยเหลือครับ" }
+      ]);
+      continue;
+    }
+
+    const nextData = {
+      ...helpState.data,
+      problem: value
+    };
+
+    setHelpRequestState(userId, {
+      step: "waiting_phone",
+      data: nextData
+    });
+
+    await safeReply(replyToken, [
+      { type: "text", text: buildHelpStepText("phone", nextData) }
+    ]);
+    continue;
+  }
+
+  if (helpState.step === "waiting_phone") {
+    const value = text.trim();
+    if (!value) {
+      await safeReply(replyToken, [
+        { type: "text", text: "กรุณาพิมพ์เบอร์โทรติดต่อกลับครับ" }
+      ]);
+      continue;
+    }
+
+    const finalData = {
+      ...helpState.data,
+      phone: value
+    };
+
+    try {
+      const insertedCase = await saveHelpRequestFromState(userId, finalData);
+      clearHelpRequestState(userId);
+
+      await safeReply(
+        replyToken,
+        [buildUserCaseReceivedFlex(insertedCase)],
+        [
+          {
+            type: "text",
+            text:
+              "ทีมงานได้รับข้อมูลแล้วครับ 🙏\n" +
+              `เลขเคสของคุณคือ ${insertedCase.case_code}\n` +
+              "เราจะตรวจสอบและติดต่อกลับโดยเร็วที่สุด"
+          }
+        ]
+      );
+
+      try {
+        await pushTeamNewCaseNotification(insertedCase);
+
+        await supabase
+          .from("help_requests")
+          .update({
+            notify_status: "sent",
+            notified_at: new Date().toISOString()
+          })
+          .eq("id", insertedCase.id);
+      } catch (notifyError) {
+        console.error("TEAM NOTIFICATION FAILED:", notifyError.message);
+
+        await supabase
+          .from("help_requests")
+          .update({
+            notify_status: "failed"
+          })
+          .eq("id", insertedCase.id);
+      }
+    } catch (err) {
+      console.error("STEP FLOW SAVE HELP REQUEST FAILED:", err);
+      await safeReply(replyToken, [
+        {
+          type: "text",
+          text: "บันทึกข้อมูลไม่สำเร็จครับ กรุณาลองใหม่อีกครั้ง"
+        }
+      ]);
+    }
+
+    continue;
+  }
+}
 
 if (text === "อัปเดตเคส") {
-if (text === "ขอความช่วยเหลือครั้งแรก") {
   await safeReply(replyToken, [buildHelpFormFlex()], [
     {
       type: "text",
