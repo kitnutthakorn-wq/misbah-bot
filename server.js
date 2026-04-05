@@ -3187,9 +3187,16 @@ function escapeRegex(value = "") {
 
 function extractHelpFormValue(text = "", label = "") {
   if (!text || !label) return "";
+
   const normalized = String(text).split("\r").join("");
   const escaped = escapeRegex(label);
-  const regex = new RegExp(`(?:^|\\n)${escaped}\\s*:\\s*([\\s\\S]*?)(?=\\n(?:ชื่อ|พื้นที่|รายละเอียด|เบอร์)\\s*:|$)`, "i");
+
+  // ใช้เฉพาะ space/tab หลัง ":" ห้ามกินข้ามบรรทัด
+  const regex = new RegExp(
+    `(?:^|\\n)${escaped}[ \\t]*:[ \\t]*([^\\n]*)(?=\\n|$)`,
+    "i"
+  );
+
   return (normalized.match(regex)?.[1] || "").trim();
 }
 
