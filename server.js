@@ -170,13 +170,19 @@ async function saveHelpRequestFromState(userId, payload = {}) {
   throw error;
 }
 
-  broadcastSse("case_created", {
-    case_id: data.id,
-    case_code: data.case_code,
-    priority: data.priority,
-    status: data.status,
-    full_name: data.full_name
-  });
+try {
+  if (typeof broadcastSse === "function") {
+    broadcastSse("case_created", {
+      case_id: data.id,
+      case_code: data.case_code,
+      priority: data.priority,
+      status: data.status,
+      full_name: data.full_name
+    });
+  }
+} catch (err) {
+  console.warn("SSE SKIPPED:", err.message);
+}
 
   return data;
 }
