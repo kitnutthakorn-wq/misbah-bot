@@ -5250,6 +5250,13 @@ if (helpState) {
 
   if (helpState.step === "waiting_phone") {
     const value = text.trim();
+    console.log("📞 STEP PHONE DEBUG:", {
+  userId,
+  step: helpState.step,
+  rawText: text,
+  trimmedValue: value,
+  helpState
+});
     if (!value) {
       await safeReply(replyToken, [
         { type: "text", text: "กรุณาพิมพ์เบอร์โทรติดต่อกลับครับ" }
@@ -5261,7 +5268,10 @@ if (helpState) {
       ...helpState.data,
       phone: value
     };
-
+console.log("✅ FINAL DATA BEFORE SAVE:", {
+  userId,
+  finalData
+});
     try {
       const insertedCase = await saveHelpRequestFromState(userId, finalData);
       clearHelpRequestState(userId);
