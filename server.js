@@ -16,6 +16,129 @@ const supabase = createClient(
 );
 
 const userStates = {};
+const helpRequestStates = {};
+
+function getHelpRequestState(userId) {
+  return helpRequestStates[userId] || null;
+}
+
+function setHelpRequestState(userId, payload) {
+  if (!userId) return;
+  helpRequestStates[userId] = payload;
+}
+
+function clearHelpRequestState(userId) {
+  if (!userId) return;
+  delete helpRequestStates[userId];
+}
+
+function isTemplateOnlyHelpForm(text = "") {
+  const normalized = String(text || "").split("\r").join("").trim();
+  return (
+    /^ชื่อ\s*:\s*\nพื้นที่\s*:\s*\nรายละเอียด\s*:\s*\nเบอร์\s*:\s*$/i.test(normalized) ||
+    /^ชื่อ\s*:\s*พื้นที่\s*:\s*รายละเอียด\s*:\s*เบอร์\s*:\s*$/i.test(normalized)
+  );
+}
+
+function buildHelpStepText(step = "", data = {}) {
+  if (step === "name") {
+    return "ขอชื่อผู้ขอความช่วยเหลือครับ\n\nตัวอย่าง: นายสมชาย ใจดี";
+  }
+
+  if (step === "location") {
+    return (
+      `รับชื่อแล้ว: ${data.full_name || "-"}\n\n` +
+      "ขอพื้นที่ / จังหวัด / จุดเกิดเหตุครับ\n\n" +
+      "ตัวอย่าง: อ.เมือง จ.ปัตตานี"
+    );
+  }
+
+  if (step === "problem") {
+    return (
+      `ชื่อ: ${data.full_name || "-"}\n` +
+      `พื้นที่: ${data.location || "-"}\n\n` +
+      "ขอรายละเอียดปัญหาที่ต้องการความช่วยเหลือครับ"
+    );
+  }
+
+  if (step === "phone") {
+    return (
+      `ชื่อ: ${data.full_name || "-"}\n` +
+      `พื้นที่: ${data.location || "-"}\n` +
+      `รายละเอียด: ${data.problem || "-"}\n\n` +
+      "ขอเบอร์โทรติดต่อกลับครับ"
+    );
+  }
+
+  return "กรุณาพิมพ์ข้อมูลต่อได้เลย";
+}
+
+async function saveHelpRequestFromState(userId, payload = {}) {
+  const full_name = String(payload.full_name || "").trim();
+  const location = String(payload.location || "").trim();
+  const problem = String(payload.problem || "").trim();
+  const phone = String(payload.phone || "").trim();
+
+  const missing = [];
+  if (!full_name) missing.push("ชื่อ");
+  if (!location) missing.push("พื้นที่");
+  if (!problem) missing.push("รายละเอียด");
+  if (!phone) missing.push("เบอร์");
+
+  if (missing.length > 0) {
+    const error = new Error("INCOMPLETE_HELP_FORM");
+    error.code = "INCOMPLETE_HELP_FORM";
+    error.missing = missing;
+    throw error;
+  }
+
+  const lowerText = `${full_name} ${location} ${problem}`.toLowerCase();
+  let priority = "normal";
+
+  if (
+    lowerText.includes("ด่วน") ||
+    lowerText.includes("ฉุกเฉิน") ||
+    lowerText.includes("ไม่มีอาหาร") ||
+    lowerText.includes("ไม่มีที่อยู่") ||
+    lowerText.includes("ไฟไหม้") ||
+    lowerText.includes("น้ำท่วม") ||
+    lowerText.includes("ป่วยหนัก")
+  ) {
+    priority = "urgent";
+  }
+
+  const case_code = await generateCaseCode();
+
+  const { data, error } = await supabase
+    .from("help_requests")
+    .insert([
+      {
+        case_code,
+        line_user_id: userId || "",
+        full_name,
+        phone,
+        location,
+        problem,
+        status: "new",
+        priority,
+        notify_status: "pending"
+      }
+    ])
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  broadcastSse("case_created", {
+    case_id: data.id,
+    case_code: data.case_code,
+    priority: data.priority,
+    status: data.status,
+    full_name: data.full_name
+  });
+
+  return data;
+}
 const caseFollowupTracker = {};
 const fetch = globalThis.fetch;
 
