@@ -16,26 +16,6 @@ const supabase = createClient(
 );
 
 const userStates = {};
-
-// 👇 วาง helper ตรงนี้เลย
-function setAddTeamState(userId, step, payload = {}) {
-  userStates[userId] = userStates[userId] || {};
-  userStates[userId].addTeam = {
-    step,
-    ...payload
-  };
-}
-
-function getAddTeamState(userId) {
-  return userStates[userId]?.addTeam || null;
-}
-
-function clearAddTeamState(userId) {
-  if (userStates[userId]?.addTeam) {
-    delete userStates[userId].addTeam;
-  }
-}
-
 const caseFollowupTracker = {};
 const fetch = globalThis.fetch;
 
@@ -320,21 +300,9 @@ async function setLineUserRole(lineUserId, role) {
   roleCache.set(lineUserId, { role, ts: Date.now() });
   return data;
 }
-
 async function isAdmin(userId) {
   const role = await getUserRole(userId);
   return role === "admin";
-}
-
-async function findTeamMemberByUserId(lineUserId) {
-  const { data, error } = await supabase
-    .from("line_user_roles")
-    .select("*")
-    .eq("line_user_id", lineUserId)
-    .maybeSingle();
-
-  if (error) throw error;
-  return data || null;
 }
 
 function parseAddTeamCommand(text = "") {
@@ -1581,236 +1549,26 @@ function buildAdminMenuFlex(sla = {}) {
           ]
         ),
 
-        buildMenuBubble(
-          "https://img1.pic.in.th/images/26272da5848ec9a47.png",
-          [
-            uriButton("แดชบอร์ดผู้บริหาร", "https://satisfied-stillness-production-7942.up.railway.app/dashboard"),
-            uriButton("รายงานผู้บริหาร", "https://satisfied-stillness-production-7942.up.railway.app/report"),
-            messageButton("Smart Alert", "ดู Smart Alert"),
-            uriButton("เปิดศูนย์ปฏิบัติการ", "https://satisfied-stillness-production-7942.up.railway.app/command-center")
-          ]
-        ),
+       buildMenuBubble(
+  "https://img1.pic.in.th/images/26272da5848ec9a47.png",
+  [
+    uriButton("แดชบอร์ดผู้บริหาร", "https://satisfied-stillness-production-7942.up.railway.app/dashboard"),
+    uriButton("รายงานผู้บริหาร", "https://satisfied-stillness-production-7942.up.railway.app/report"),
+    messageButton("Smart Alert", "ดู Smart Alert"),
+    uriButton("เปิดศูนย์ปฏิบัติการ", "https://satisfied-stillness-production-7942.up.railway.app/command-center")
+  ]
+),
 
         buildMenuBubble(
           "https://img1.pic.in.th/images/346dc5fe1957cf436.png",
           [
-            messageButton("ดูทีม", "เปิดเมนูจัดการทีม"),
-            messageButton("ดูสิทธิ์", "คำสั่งดูสิทธิ์"),
-            messageButton("เพิ่มทีม", "คำสั่งเพิ่มทีม"),
-            messageButton("ลบทีม", "คำสั่งลบทีม"),
+            uriButton("Dashboard", "https://satisfied-stillness-production-7942.up.railway.app/dashboard"),
+            uriButton("รายงานผู้บริหาร", "https://satisfied-stillness-production-7942.up.railway.app/report"),
+            messageButton("ดูทีม", "ดูทีม"),
+            uriButton("เปิดศูนย์ปฏิบัติการ", "https://satisfied-stillness-production-7942.up.railway.app/command-center")
           ]
         )
       ]
-    }
-  };
-}
-
-function buildTeamManageFlex() {
-  function btn(label, text) {
-    return {
-      type: "button",
-      style: "primary",
-      height: "sm",
-      color: "#22C55E",
-      action: {
-        type: "message",
-        label,
-        text
-      }
-    };
-  }
-
-  return {
-    type: "flex",
-    altText: "เมนูจัดการทีม",
-    contents: {
-      type: "bubble",
-      size: "mega",
-      hero: {
-        type: "image",
-        url: "https://img1.pic.in.th/images/346dc5fe1957cf436.png",
-        size: "full",
-        aspectRatio: "1:1",
-        aspectMode: "cover"
-      },
-      body: {
-        type: "box",
-        layout: "vertical",
-        spacing: "10px",
-        paddingAll: "14px",
-       contents: [
-  btn("บริหารทีมงาน", "รายการทีม"),
-  btn("บริหารสิทธิ์ทีมงาน", "คำสั่งดูสิทธิ์"),
-  {
-    type: "button",
-    style: "primary",
-    height: "sm",
-    color: "#22C55E",
-    action: {
-      type: "uri",
-      label: "เพิ่มทีมงาน",
-      uri: getTeamLiffUrl("pick-member")
-    }
-  }, // 👈 ต้องมี comma ตรงนี้
-  btn("ลบทีมงาน", "คำสั่งลบทีม")
-]
-      }
-    }
-  };
-}
-function getTeamRoleTheme(role = "") {
-  const r = String(role || "").toLowerCase();
-
-  if (r === "admin") {
-    return { color: "#DC2626", label: "ผู้ดูแลระบบ" };
-  }
-  if (r === "staff") {
-    return { color: "#F97316", label: "ทีมงาน" };
-  }
-  if (r === "viewer") {
-    return { color: "#0B7C86", label: "ดูได้อย่างเดียว" };
-  }
-
-  return { color: "#6B7280", label: role || "ไม่ระบุ" };
-}
-
-function buildTeamMemberFlex(item = {}) {
-  const theme = getTeamRoleTheme(item.role);
-  const activeText = item.is_active === false ? "ปิดการใช้งาน" : "ใช้งานอยู่";
-
-  return {
-    type: "flex",
-    altText: `ข้อมูลทีม ${item.line_user_id || "-"}`,
-    contents: {
-      type: "bubble",
-      size: "mega",
-      header: {
-        type: "box",
-        layout: "vertical",
-        backgroundColor: theme.color,
-        paddingAll: "16px",
-        contents: [
-          {
-            type: "text",
-            text: "ข้อมูลทีมงาน",
-            color: "#FFFFFF",
-            weight: "bold",
-            size: "lg",
-            align: "center"
-          },
-          {
-            type: "text",
-            text: theme.label,
-            color: "#F9FAFB",
-            size: "sm",
-            margin: "sm",
-            align: "center"
-          }
-        ]
-      },
-      body: {
-        type: "box",
-        layout: "vertical",
-        spacing: "md",
-        paddingAll: "16px",
-        contents: [
-          {
-            type: "text",
-            text: `LINE USER ID: ${item.line_user_id || "-"}`,
-            wrap: true,
-            size: "sm"
-          },
-          {
-            type: "text",
-            text: `สิทธิ์: ${item.role || "-"}`,
-            wrap: true,
-            size: "sm"
-          },
-          {
-            type: "text",
-            text: `สถานะ: ${activeText}`,
-            wrap: true,
-            size: "sm"
-          }
-        ]
-      },
-      footer: {
-        type: "box",
-        layout: "vertical",
-        spacing: "sm",
-        paddingAll: "14px",
-        contents: [
-          {
-            type: "button",
-            style: "secondary",
-            height: "sm",
-            action: {
-              type: "message",
-              label: "ดูสิทธิ์",
-              text: `ดูสิทธิ์ ${item.line_user_id || ""}`
-            }
-          }
-        ]
-      }
-    }
-  };
-}
-function buildSelectRoleFlex(userId) {
-  function btn(label, text, color) {
-    return {
-      type: "button",
-      style: "primary",
-      height: "sm",
-      color,
-      action: {
-        type: "message",
-        label,
-        text
-      }
-    };
-  }
-
-  return {
-    type: "flex",
-    altText: "เลือกสิทธิ์ทีมงาน",
-    contents: {
-      type: "bubble",
-      size: "mega",
-      header: {
-        type: "box",
-        layout: "vertical",
-        backgroundColor: "#0B7C86",
-        paddingAll: "16px",
-        contents: [
-          {
-            type: "text",
-            text: "เลือกสิทธิ์ทีมงาน",
-            color: "#FFFFFF",
-            weight: "bold",
-            size: "lg",
-            align: "center"
-          },
-          {
-            type: "text",
-            text: userId,
-            color: "#D1FAE5",
-            size: "sm",
-            align: "center",
-            margin: "sm"
-          }
-        ]
-      },
-      body: {
-        type: "box",
-        layout: "vertical",
-        spacing: "10px",
-        paddingAll: "16px",
-        contents: [
-          btn("Admin", `setrole_auto admin`, "#DC2626"),
-          btn("Staff", `setrole_auto staff`, "#F97316"),
-          btn("Viewer", `setrole_auto viewer`, "#0B7C86")
-        ]
-      }
     }
   };
 }
@@ -1855,11 +1613,11 @@ function buildSmartAlertFlex(sla = {}) {
           bigButton(` ใกล้หลุด SLA (${nearDue})`, "#F97316", "ดูใกล้หลุด SLA"),
           bigButton(` เคสเปิดทั้งหมด (${openCases})`, "#1D4ED8", "ดูเคสเปิดทั้งหมด"),
           bigButton(
-            "เปิดศูนย์ปฏิบัติการ",
-            "#22C55E",
-            null,
-            "https://satisfied-stillness-production-7942.up.railway.app/command-center"
-          )
+  "เปิดศูนย์ปฏิบัติการ",
+  "#22C55E",
+  null,
+  "https://satisfied-stillness-production-7942.up.railway.app/command-center"
+)
         ]
       }
     }
@@ -1932,11 +1690,15 @@ function buildHelpRequestChoiceFlex() {
 }
 
 function buildHelpFormFlex() {
-  const fullFormText = "ชื่อ: \nพื้นที่: \nรายละเอียด: \nเบอร์: ";
+  const prefill = encodeURIComponent("ชื่อ:\nพื้นที่:\nรายละเอียด:\nเบอร์:");
+  const useUri = LINE_OA_ID && LINE_OA_ID.startsWith("@");
+  const primaryAction = useUri
+    ? { type: "uri", label: "กรอกข้อมูลตามนี้", uri: `https://line.me/R/oaMessage/${LINE_OA_ID}/?${prefill}` }
+    : { type: "message", label: "กรอกข้อมูลตามนี้", text: "ชื่อ:\nพื้นที่:\nรายละเอียด:\nเบอร์:" };
 
   return {
     type: "flex",
-    altText: "แบบฟอร์มขอความช่วยเหลือ | คนช่วยฅน",
+    altText: "แบบฟอร์มขอความช่วยเหลือ",
     contents: {
       type: "bubble",
       size: "mega",
@@ -1944,127 +1706,36 @@ function buildHelpFormFlex() {
         type: "box",
         layout: "vertical",
         backgroundColor: "#0b7c86",
-        paddingAll: "18px",
+        paddingAll: "16px",
         contents: [
-          {
-            type: "text",
-            text: "มูลนิธิคนช่วยฅน",
-            color: "#DFF6F8",
-            size: "sm",
-            align: "center",
-            weight: "bold"
-          },
-          {
-            type: "text",
-            text: "แบบฟอร์มขอความช่วยเหลือ",
-            color: "#ffffff",
-            weight: "bold",
-            size: "lg",
-            align: "center",
-            margin: "sm"
-          },
-          {
-            type: "text",
-            text: "กรุณากดปุ่มด้านล่าง แล้วพิมพ์ข้อมูลต่อในข้อความเดียว",
-            color: "#d9f3f5",
-            size: "sm",
-            margin: "sm",
-            wrap: true,
-            align: "center"
-          }
+          { type: "text", text: "แบบฟอร์มขอความช่วยเหลือ", color: "#ffffff", weight: "bold", size: "lg", align: "center" },
+          { type: "text", text: "กรุณากรอกข้อมูลตามตัวอย่างด้านล่าง", color: "#d9f3f5", size: "sm", margin: "sm", wrap: true, align: "center" }
         ]
       },
       body: {
         type: "box",
         layout: "vertical",
-        spacing: "md",
+        spacing: "lg",
         paddingAll: "20px",
         contents: [
           {
             type: "box",
             layout: "vertical",
-            backgroundColor: "#F8FAFC",
-            cornerRadius: "14px",
-            paddingAll: "16px",
-            spacing: "sm",
-            contents: [
-              {
-                type: "text",
-                text: "กรอกข้อมูลให้ครบ 4 รายการ",
-                weight: "bold",
-                size: "sm",
-                color: "#16324F"
-              },
-              {
-                type: "text",
-                text: "1) ชื่อผู้ขอความช่วยเหลือ",
-                size: "sm",
-                color: "#374151",
-                wrap: true
-              },
-              {
-                type: "text",
-                text: "2) พื้นที่ / จังหวัด / จุดเกิดเหตุ",
-                size: "sm",
-                color: "#374151",
-                wrap: true
-              },
-              {
-                type: "text",
-                text: "3) รายละเอียดปัญหาที่ต้องการความช่วยเหลือ",
-                size: "sm",
-                color: "#374151",
-                wrap: true
-              },
-              {
-                type: "text",
-                text: "4) เบอร์โทรติดต่อกลับ",
-                size: "sm",
-                color: "#374151",
-                wrap: true
-              }
-            ]
-          },
-          {
-            type: "button",
-            style: "primary",
-            height: "md",
-            color: "#0B7C86",
-            action: {
-              type: "message",
-              label: "กรอกข้อมูลขอความช่วยเหลือ",
-              text: fullFormText
-            }
-          },
-          {
-            type: "box",
-            layout: "vertical",
-            backgroundColor: "#FFF7ED",
+            backgroundColor: "#F9FAFB",
             cornerRadius: "12px",
-            paddingAll: "12px",
-            margin: "sm",
+            paddingAll: "16px",
+            spacing: "md",
             contents: [
-              {
-                type: "text",
-                text: "ตัวอย่าง",
-                weight: "bold",
-                size: "sm",
-                color: "#9A3412"
-              },
-              {
-                type: "text",
-                text: "ชื่อ: นายสมชาย ใจดี\nพื้นที่: อ.เมือง จ.ปัตตานี\nรายละเอียด: บ้านเสียหายจากเหตุไฟไหม้ ต้องการที่พักชั่วคราว\nเบอร์: 08xxxxxxxx",
-                size: "xs",
-                color: "#7C2D12",
-                wrap: true,
-                margin: "sm"
-              }
+              { type: "text", text: "ชื่อ:", weight: "bold", size: "sm" },
+              { type: "text", text: "พื้นที่:", weight: "bold", size: "sm" },
+              { type: "text", text: "รายละเอียด:", weight: "bold", size: "sm" },
+              { type: "text", text: "เบอร์:", weight: "bold", size: "sm" }
             ]
           },
           {
             type: "text",
-            text: "เมื่อส่งครบ ระบบจะออกเลขเคสให้อัตโนมัติ",
-            size: "xs",
+            text: useUri ? "กดปุ่มด้านล่างเพื่อเปิดช่องพิมพ์พร้อมหัวข้อฟอร์ม" : "คัดลอกหัวข้อด้านบน แล้วพิมพ์ข้อมูลต่อท้ายได้เลย",
+            size: "sm",
             color: "#6B7280",
             wrap: true,
             align: "center"
@@ -2077,21 +1748,14 @@ function buildHelpFormFlex() {
         spacing: "sm",
         paddingAll: "16px",
         contents: [
-          {
-            type: "button",
-            style: "secondary",
-            height: "sm",
-            action: {
-              type: "message",
-              label: "กลับไปเลือกประเภท",
-              text: "ขอความช่วยเหลือ"
-            }
-          }
+          { type: "button", style: "primary", height: "sm", color: "#0b7c86", action: primaryAction },
+          { type: "button", style: "secondary", height: "sm", action: { type: "message", label: "กลับไปเลือกประเภท", text: "ขอความช่วยเหลือ" } }
         ]
       }
     }
   };
 }
+
 function buildContactOfficerFlex() {
   return {
     type: "flex",
@@ -2261,6 +1925,7 @@ async function getSlaMenuCounts() {
 
     const rows = Array.isArray(data) ? data : [];
     const merged = rows.map(mergeCaseWithSla);
+
     const activeRows = merged.filter(
       (row) => !row.sla_excluded && !["done", "cancelled"].includes(normalizeSlaStatus(row.status))
     );
@@ -3569,58 +3234,32 @@ function buildUserCaseReceivedFlex(item = {}) {
 }
 
 async function saveHelpRequest(userId, text) {
-  const normalizedText = String(text || "").split("\r").join("").trim();
-
-  const full_name = extractHelpFormValue(normalizedText, "ชื่อ");
-  const location = extractHelpFormValue(normalizedText, "พื้นที่");
-  const problem = extractHelpFormValue(normalizedText, "รายละเอียด");
-  const phone =
-    extractHelpFormValue(normalizedText, "เบอร์") ||
-    extractHelpFormValue(normalizedText, "เบอร์โทร") ||
-    extractHelpFormValue(normalizedText, "โทร");
-
-  const fields = {
-    full_name: String(full_name || "").trim(),
-    location: String(location || "").trim(),
-    problem: String(problem || "").trim(),
-    phone: String(phone || "").trim()
-  };
+  const full_name = extractHelpFormValue(text, "ชื่อ");
+  const location = extractHelpFormValue(text, "พื้นที่");
+  const problem = extractHelpFormValue(text, "รายละเอียด");
+  const phone = extractHelpFormValue(text, "เบอร์");
 
   const missing = [];
-  if (!fields.full_name) missing.push("ชื่อ");
-  if (!fields.location) missing.push("พื้นที่");
-  if (!fields.problem) missing.push("รายละเอียด");
-  if (!fields.phone) missing.push("เบอร์");
-
-  const hasOnlyTemplate =
-    looksLikeHelpFormText(normalizedText) &&
-    !fields.full_name &&
-    !fields.location &&
-    !fields.problem &&
-    !fields.phone;
+  if (!full_name) missing.push("ชื่อ");
+  if (!location) missing.push("พื้นที่");
+  if (!problem) missing.push("รายละเอียด");
+  if (!phone) missing.push("เบอร์");
 
   if (missing.length > 0) {
-    const error = new Error(
-      hasOnlyTemplate ? "EMPTY_HELP_FORM_TEMPLATE" : "INCOMPLETE_HELP_FORM"
-    );
+    const error = new Error("INCOMPLETE_HELP_FORM");
     error.code = "INCOMPLETE_HELP_FORM";
     error.missing = missing;
-    error.is_template_only = hasOnlyTemplate;
-    error.form_values = fields;
     throw error;
   }
 
-  const lowerText = normalizedText.toLowerCase();
+  const lowerText = text.toLowerCase();
   let priority = "normal";
 
   if (
     lowerText.includes("ด่วน") ||
     lowerText.includes("ฉุกเฉิน") ||
     lowerText.includes("ไม่มีอาหาร") ||
-    lowerText.includes("ไม่มีที่อยู่") ||
-    lowerText.includes("ไฟไหม้") ||
-    lowerText.includes("น้ำท่วม") ||
-    lowerText.includes("ป่วยหนัก")
+    lowerText.includes("ไม่มีที่อยู่")
   ) {
     priority = "urgent";
   }
@@ -3633,14 +3272,14 @@ async function saveHelpRequest(userId, text) {
       {
         case_code,
         line_user_id: userId || "",
-        full_name: fields.full_name,
-        phone: fields.phone,
-        location: fields.location,
-        problem: fields.problem,
+        full_name,
+        phone,
+        location,
+        problem,
         status: "new",
         priority,
-        notify_status: "pending"
-      }
+        notify_status: "pending",
+      },
     ])
     .select()
     .single();
@@ -3650,16 +3289,10 @@ async function saveHelpRequest(userId, text) {
     throw error;
   }
 
-  broadcastSse("case_created", {
-    case_id: data.id,
-    case_code: data.case_code,
-    priority: data.priority,
-    status: data.status,
-    full_name: data.full_name
-  });
-
+  broadcastSse("case_created", { case_id: data.id, case_code: data.case_code, priority: data.priority, status: data.status, full_name: data.full_name });
   return data;
 }
+
 async function getNewCases(limit = 10) {
   const { data, error } = await supabase
     .from("help_requests")
@@ -4788,181 +4421,10 @@ app.post("/webhook", async (req, res) => {
       const text = event.message.text.trim();
       const userId = event.source?.userId || "";
       const role = await getUserRole(userId);
-      
- // =========================
-// STEP FLOW: เพิ่มทีม (รับ USER ID)
-// =========================
-const addState = getAddTeamState(userId);
 
-if (addState?.step === "waiting_user_id") {
-  const inputId = text.trim();
-
-  if (!inputId.startsWith("U")) {
-    await safeReply(replyToken, [
-      { type: "text", text: "❌ USER ID ต้องขึ้นต้นด้วย U" }
-    ]);
-    continue;
-  }
-
-  setAddTeamState(userId, "waiting_role", {
-    targetUserId: inputId
-  });
-
-  await safeReply(replyToken, [
-    buildSelectRoleFlex(inputId)
-  ]);
-
-  continue;
-}
-
-if (text.startsWith("setrole ")) {
-
-  if (!(await isAdmin(userId))) {
-    await safeReply(replyToken, [
-      { type: "text", text: "❌ ไม่มีสิทธิ์ใช้งานคำสั่งนี้" }
-    ]);
-    continue;
-  }
-
-  const parts = text.trim().split(/\s+/);
-  const targetUserId = parts[1] || "";
-  const role = (parts[2] || "").toLowerCase();
-
-  try {
-    if (!targetUserId.startsWith("U")) {
-      await safeReply(replyToken, [
-        { type: "text", text: "❌ USER ID ไม่ถูกต้อง" }
-      ]);
-      continue;
-    }
-
-    if (!["admin", "staff", "viewer"].includes(role)) {
-      await safeReply(replyToken, [
-        { type: "text", text: "❌ role ต้องเป็น admin, staff หรือ viewer เท่านั้น" }
-      ]);
-      continue;
-    }
-
-    if (role === "admin") {
-      const adminCount = await countActiveAdmins();
-      if (adminCount >= 3) {
-        await safeReply(replyToken, [
-          { type: "text", text: "❌ Admin เต็มแล้ว (สูงสุด 3 คน)" }
-        ]);
-        continue;
-      }
-    }
-
-    const { data: existing } = await supabase
-      .from("line_user_roles")
-      .select("line_user_id, is_active, role")
-      .eq("line_user_id", targetUserId)
-      .maybeSingle();
-
-if (existing && existing.is_active !== false) {
-
-  // ✅ ถ้า role เดิม = role ใหม่ → กันซ้ำ
-  if (existing.role === role) {
-    await safeReply(replyToken, [
-      { type: "text", text: "⚠️ ผู้ใช้นี้มีสิทธิ์นี้อยู่แล้ว" }
-    ]);
-    continue;
-  }
-
-  // ✅ ถ้า role เปลี่ยน → UPDATE แทน
-  await setLineUserRole(targetUserId, role);
-
-  await safeReply(replyToken, [
-    { type: "text", text: `🔄 อัปเดตสิทธิ์สำเร็จ (${role})` }
-  ]);
-
-  continue;
-} 
-
-  }catch (err) {
-    console.error("SET ROLE ERROR:", err);
-
-    await safeReply(replyToken, [
-      { type: "text", text: "❌ เกิดข้อผิดพลาด" }
-    ]);
-    continue;
-  }
-}
-if (text.startsWith("setrole_auto ")) {
-
-  if (!(await isAdmin(userId))) {
-    await safeReply(replyToken, [
-      { type: "text", text: "❌ ไม่มีสิทธิ์ใช้งานคำสั่งนี้" }
-    ]);
-    continue;
-  }
-
-  const role = (text.split(" ")[1] || "").toLowerCase();
-
-  try {
-    const targetUserId = event?.source?.userId || "";
-
-    if (!targetUserId.startsWith("U")) {
-      await safeReply(replyToken, [
-        { type: "text", text: "❌ ไม่พบ USER ID ที่ถูกต้อง" }
-      ]);
-      continue;
-    }
-
-    if (!["admin", "staff", "viewer"].includes(role)) {
-      await safeReply(replyToken, [
-        { type: "text", text: "❌ role ต้องเป็น admin, staff หรือ viewer เท่านั้น" }
-      ]);
-      continue;
-    }
-
-    if (role === "admin") {
-      const adminCount = await countActiveAdmins();
-      if (adminCount >= 3) {
-        await safeReply(replyToken, [
-          { type: "text", text: "❌ Admin เต็มแล้ว (สูงสุด 3 คน)" }
-        ]);
-        continue;
-      }
-    }
-
-    const { data: existing } = await supabase
-      .from("line_user_roles")
-      .select("line_user_id, is_active")
-      .eq("line_user_id", targetUserId)
-      .maybeSingle();
-
-if (existing && existing.is_active !== false) {
-
-  // ✅ ถ้า role เดิม = role ใหม่ → กันซ้ำ
-  if (existing.role === role) {
-    await safeReply(replyToken, [
-      { type: "text", text: "⚠️ ผู้ใช้นี้มีสิทธิ์นี้อยู่แล้ว" }
-    ]);
-    continue;
-  }
-
-  // ✅ ถ้า role เปลี่ยน → UPDATE แทน
-  await setLineUserRole(targetUserId, role);
-
-  await safeReply(replyToken, [
-    { type: "text", text: `🔄 อัปเดตสิทธิ์สำเร็จ (${role})` }
-  ]);
-
-  continue;
-}
-  }catch (err) {
-    console.error("AUTO SET ROLE ERROR:", err);
-
-    await safeReply(replyToken, [
-      { type: "text", text: "❌ เกิดข้อผิดพลาด" }
-    ]);
-    continue;
-  }
-}      
 console.log("EVENT TEXT =", text);
 console.log("USER ID =", userId);
-
+console.log("USER ROLE =", role);
 
 console.log("SOURCE TYPE =", event.source?.type);
 console.log("GROUP ID =", event.source?.groupId);
@@ -5299,98 +4761,6 @@ if (text === "เมนูแอดมิน" || text === "เปิดเมน
   ]);
   continue;
 }
-
-if (text === "เปิดเมนูจัดการทีม" || text === "ดูทีม") {
-  if (!(await isAdmin(userId))) {
-    await safeReply(replyToken, [
-      { type: "text", text: "❌ เมนูนี้สำหรับผู้ดูแลระบบ" }
-    ]);
-    continue;
-  }
-
-  await safeReply(replyToken, [buildTeamManageFlex()]);
-  continue;
-}
-if (text === "รายการทีม") {
-  if (!(await isAdmin(userId))) {
-    await safeReply(replyToken, [
-      { type: "text", text: "❌ เมนูนี้สำหรับผู้ดูแลระบบ" }
-    ]);
-    continue;
-  }
-
-  const { data, error } = await supabase
-    .from("line_user_roles")
-    .select("line_user_id, role, is_active")
-    .order("role", { ascending: true })
-    .limit(10);
-
-  if (error) {
-    console.error("TEAM LIST ERROR:", error);
-    await safeReply(replyToken, [
-      { type: "text", text: "เกิดข้อผิดพลาดในการดึงข้อมูลทีมงาน" }
-    ]);
-    continue;
-  }
-
-  const rowsRaw = Array.isArray(data) ? data : [];
-
-const uniqueMap = new Map();
-for (const row of rowsRaw) {
-  if (!uniqueMap.has(row.line_user_id)) {
-    uniqueMap.set(row.line_user_id, row);
-  }
-}
-
-const rows = Array.from(uniqueMap.values());
-
-  if (!rows.length) {
-    await safeReply(replyToken, [
-      {
-        type: "flex",
-        altText: "รายการทีม",
-        contents: {
-          type: "bubble",
-          size: "mega",
-          header: {
-            type: "box",
-            layout: "vertical",
-            backgroundColor: "#0B7C86",
-            paddingAll: "16px",
-            contents: [
-              {
-                type: "text",
-                text: "รายการทีมงาน",
-                color: "#FFFFFF",
-                weight: "bold",
-                size: "lg",
-                align: "center"
-              }
-            ]
-          },
-          body: {
-            type: "box",
-            layout: "vertical",
-            paddingAll: "20px",
-            contents: [
-              {
-                type: "text",
-                text: "ยังไม่มีข้อมูลทีมงานในระบบ",
-                wrap: true,
-                align: "center"
-              }
-            ]
-          }
-        }
-      }
-    ]);
-    continue;
-  }
-
-  const messages = rows.slice(0, 10).map((row) => buildTeamMemberFlex(row));
-  await safeReply(replyToken, messages);
-  continue;
-}
 if (text === "คำสั่งดูสิทธิ์") {
   await safeReply(replyToken, [{
     type: "text",
@@ -5403,27 +4773,22 @@ if (text === "คำสั่งดูสิทธิ์") {
   }]);
   continue;
 }
+
 if (text === "คำสั่งเพิ่มทีม") {
-
-  const targetUserId = event?.source?.userId || "";
-
-  if (!targetUserId.startsWith("U")) {
-    await safeReply(replyToken, [
-      { type: "text", text: "❌ ไม่พบ USER ID" }
-    ]);
-    continue;
-  }
-
-  setAddTeamState(userId, "waiting_role", {
-    targetUserId
-  });
-
-  await safeReply(replyToken, [
-    buildSelectRoleFlex(targetUserId)
-  ]);
-
+  await safeReply(replyToken, [{
+    type: "text",
+    text:
+      "คำสั่งเพิ่มทีม\n\n" +
+      "ใช้รูปแบบ:\n" +
+      "เพิ่มทีม USER_ID role\n\n" +
+      "role ที่ใช้ได้:\n" +
+      "- admin\n- staff\n- viewer\n\n" +
+      "ตัวอย่าง:\n" +
+      "เพิ่มทีม U1234567890abcdef staff"
+  }]);
   continue;
 }
+
 if (text === "คำสั่งลบทีม") {
   await safeReply(replyToken, [{
     type: "text",
