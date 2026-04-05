@@ -1691,10 +1691,12 @@ function buildHelpRequestChoiceFlex() {
 
 function buildHelpFormFlex() {
   const prefill = encodeURIComponent("ชื่อ:\nพื้นที่:\nรายละเอียด:\nเบอร์:");
-  const useUri = LINE_OA_ID && LINE_OA_ID.startsWith("@");
-  const primaryAction = useUri
-    ? { type: "uri", label: "กรอกข้อมูลตามนี้", uri: `https://line.me/R/oaMessage/${LINE_OA_ID}/?${prefill}` }
-    : { type: "message", label: "กรอกข้อมูลตามนี้", text: "ชื่อ:\nพื้นที่:\nรายละเอียด:\nเบอร์:" };
+  const useUri = false;
+  const primaryAction = {
+  type: "message",
+  label: "กรอกข้อมูลตามนี้",
+  text: "ชื่อ:\nพื้นที่:\nรายละเอียด:\nเบอร์:"
+};
 
   return {
     type: "flex",
