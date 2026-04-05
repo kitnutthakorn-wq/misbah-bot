@@ -1932,85 +1932,11 @@ function buildHelpRequestChoiceFlex() {
 }
 
 function buildHelpFormFlex() {
- const useUri = false;
-  const primaryAction = useUri
-    ? {
-        type: "uri",
-        label: "กรอกข้อมูลตามนี้",
-        uri: `https://line.me/R/oaMessage/${encodeURIComponent(LINE_OA_ID)}/?${encodeURIComponent("ชื่อ: ")}`
-      }
-    : {
-        type: "postback",
-        label: "กรอกข้อมูลตามนี้",
-        data: "help_form=open",
-        displayText: "กรอกข้อมูลขอความช่วยเหลือ",
-        inputOption: "openKeyboard",
-        fillInText: "ชื่อ: "
-      };
-
-  const nameAction = useUri
-    ? {
-        type: "uri",
-        label: "ชื่อ-สกุล",
-        uri: `https://line.me/R/oaMessage/${encodeURIComponent(LINE_OA_ID)}/?${encodeURIComponent("ชื่อ: ")}`
-      }
-    : {
-        type: "postback",
-        label: "ชื่อ-สกุล",
-        data: "help_form=name",
-        displayText: "กรอกชื่อ-สกุล",
-        inputOption: "openKeyboard",
-        fillInText: "ชื่อ: "
-      };
-
-  const locationAction = useUri
-    ? {
-        type: "uri",
-        label: "พื้นที่",
-        uri: `https://line.me/R/oaMessage/${encodeURIComponent(LINE_OA_ID)}/?${encodeURIComponent("พื้นที่: ")}`
-      }
-    : {
-        type: "postback",
-        label: "พื้นที่",
-        data: "help_form=location",
-        displayText: "กรอกพื้นที่",
-        inputOption: "openKeyboard",
-        fillInText: "พื้นที่: "
-      };
-
-  const problemAction = useUri
-    ? {
-        type: "uri",
-        label: "รายละเอียด",
-        uri: `https://line.me/R/oaMessage/${encodeURIComponent(LINE_OA_ID)}/?${encodeURIComponent("รายละเอียด: ")}`
-      }
-    : {
-        type: "postback",
-        label: "รายละเอียด",
-        data: "help_form=problem",
-        displayText: "กรอกรายละเอียดปัญหา",
-        inputOption: "openKeyboard",
-        fillInText: "รายละเอียด: "
-      };
-
-  const phoneAction = useUri
-    ? {
-        type: "uri",
-        label: "เบอร์โทร",
-        uri: `https://line.me/R/oaMessage/${encodeURIComponent(LINE_OA_ID)}/?${encodeURIComponent("เบอร์: ")}`
-      }
-    : {
-        type: "postback",
-        label: "เบอร์โทร",
-        data: "help_form=phone",
-        displayText: "กรอกเบอร์โทร",
-        inputOption: "openKeyboard",
-        fillInText: "เบอร์: "
-      };
+  const fullFormText = "ชื่อ: \nพื้นที่: \nรายละเอียด: \nเบอร์: ";
 
   return {
     type: "flex",
-    altText: "แบบฟอร์มขอความช่วยเหลือ",
+    altText: "แบบฟอร์มขอความช่วยเหลือ | คนช่วยฅน",
     contents: {
       type: "bubble",
       size: "mega",
@@ -2018,19 +1944,28 @@ function buildHelpFormFlex() {
         type: "box",
         layout: "vertical",
         backgroundColor: "#0b7c86",
-        paddingAll: "16px",
+        paddingAll: "18px",
         contents: [
+          {
+            type: "text",
+            text: "มูลนิธิคนช่วยฅน",
+            color: "#DFF6F8",
+            size: "sm",
+            align: "center",
+            weight: "bold"
+          },
           {
             type: "text",
             text: "แบบฟอร์มขอความช่วยเหลือ",
             color: "#ffffff",
             weight: "bold",
             size: "lg",
-            align: "center"
+            align: "center",
+            margin: "sm"
           },
           {
             type: "text",
-            text: "กดปุ่มแล้วระบบจะเด้งหัวข้อให้พิมพ์ต่อได้ทันที",
+            text: "กรุณากดปุ่มด้านล่าง แล้วพิมพ์ข้อมูลต่อในข้อความเดียว",
             color: "#d9f3f5",
             size: "sm",
             margin: "sm",
@@ -2048,71 +1983,90 @@ function buildHelpFormFlex() {
           {
             type: "box",
             layout: "vertical",
-            backgroundColor: "#F9FAFB",
-            cornerRadius: "12px",
-            paddingAll: "14px",
+            backgroundColor: "#F8FAFC",
+            cornerRadius: "14px",
+            paddingAll: "16px",
             spacing: "sm",
             contents: [
-              { type: "text", text: "กรอกให้ครบ 4 รายการ", weight: "bold", size: "sm", color: "#16324F" },
-              { type: "text", text: "1) ชื่อ", size: "sm", color: "#374151" },
-              { type: "text", text: "2) พื้นที่", size: "sm", color: "#374151" },
-              { type: "text", text: "3) รายละเอียด", size: "sm", color: "#374151" },
-              { type: "text", text: "4) เบอร์โทร", size: "sm", color: "#374151" }
+              {
+                type: "text",
+                text: "กรอกข้อมูลให้ครบ 4 รายการ",
+                weight: "bold",
+                size: "sm",
+                color: "#16324F"
+              },
+              {
+                type: "text",
+                text: "1) ชื่อผู้ขอความช่วยเหลือ",
+                size: "sm",
+                color: "#374151",
+                wrap: true
+              },
+              {
+                type: "text",
+                text: "2) พื้นที่ / จังหวัด / จุดเกิดเหตุ",
+                size: "sm",
+                color: "#374151",
+                wrap: true
+              },
+              {
+                type: "text",
+                text: "3) รายละเอียดปัญหาที่ต้องการความช่วยเหลือ",
+                size: "sm",
+                color: "#374151",
+                wrap: true
+              },
+              {
+                type: "text",
+                text: "4) เบอร์โทรติดต่อกลับ",
+                size: "sm",
+                color: "#374151",
+                wrap: true
+              }
             ]
           },
           {
             type: "button",
             style: "primary",
-            height: "sm",
+            height: "md",
             color: "#0B7C86",
-            action: primaryAction
-          },
-          {
-            type: "separator",
-            margin: "sm"
+            action: {
+              type: "message",
+              label: "กรอกข้อมูลขอความช่วยเหลือ",
+              text: fullFormText
+            }
           },
           {
             type: "box",
             layout: "vertical",
-            spacing: "sm",
+            backgroundColor: "#FFF7ED",
+            cornerRadius: "12px",
+            paddingAll: "12px",
+            margin: "sm",
             contents: [
               {
-                type: "button",
-                style: "primary",
-                height: "sm",
-                color: "#0B7C86",
-                action: nameAction
+                type: "text",
+                text: "ตัวอย่าง",
+                weight: "bold",
+                size: "sm",
+                color: "#9A3412"
               },
               {
-                type: "button",
-                style: "primary",
-                height: "sm",
-                color: "#163C72",
-                action: locationAction
-              },
-              {
-                type: "button",
-                style: "primary",
-                height: "sm",
-                color: "#F59E0B",
-                action: problemAction
-              },
-              {
-                type: "button",
-                style: "primary",
-                height: "sm",
-                color: "#1F8F4D",
-                action: phoneAction
+                type: "text",
+                text: "ชื่อ: นายสมชาย ใจดี\nพื้นที่: อ.เมือง จ.ปัตตานี\nรายละเอียด: บ้านเสียหายจากเหตุไฟไหม้ ต้องการที่พักชั่วคราว\nเบอร์: 08xxxxxxxx",
+                size: "xs",
+                color: "#7C2D12",
+                wrap: true,
+                margin: "sm"
               }
             ]
           },
           {
             type: "text",
-            text: "ตัวอย่าง: ชื่อ: นายสมชาย ใจดี",
+            text: "เมื่อส่งครบ ระบบจะออกเลขเคสให้อัตโนมัติ",
             size: "xs",
             color: "#6B7280",
             wrap: true,
-            margin: "md",
             align: "center"
           }
         ]
@@ -2138,7 +2092,6 @@ function buildHelpFormFlex() {
     }
   };
 }
-
 function buildContactOfficerFlex() {
   return {
     type: "flex",
