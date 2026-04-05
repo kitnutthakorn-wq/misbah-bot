@@ -14,6 +14,14 @@ const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
+const {
+  buildHelpStepFlex,
+  buildHelpCancelFlex,
+  buildHelpExecutiveSummaryFlex,
+  sanitizeHelpWizardInput,
+  normalizePhoneInput,
+  isValidPhoneInput
+} = require("./help-flex-wizard");
 // =========================
 // GENERATE CASE CODE (PRO MAX SAFE)
 // =========================
@@ -115,7 +123,7 @@ async function saveHelpRequestFromState(userId, payload = {}) {
   const full_name = String(payload.full_name || "").trim();
   const location = String(payload.location || "").trim();
   const problem = String(payload.problem || "").trim();
-  const phone = String(payload.phone || "").trim();
+  const phone = normalizePhoneInput(String(payload.phone || "").trim());
 console.log("🔥 SAVE DEBUG:", {
   userId,
   payload,
@@ -129,6 +137,12 @@ console.log("🔥 SAVE DEBUG:", {
   if (!location) missing.push("พื้นที่");
   if (!problem) missing.push("รายละเอียด");
   if (!phone) missing.push("เบอร์");
+
+  if (phone && !isValidPhoneInput(phone)) {
+    const error = new Error("INVALID_PHONE_FORMAT");
+    error.code = "INVALID_PHONE_FORMAT";
+    throw error;
+  }
 
   if (missing.length > 0) {
     const error = new Error("INCOMPLETE_HELP_FORM");
@@ -3384,38 +3398,7 @@ function looksLikeHelpFormText(text = "") {
 }
 
 function buildUserCaseReceivedFlex(item = {}) {
-  return {
-    type: "flex",
-    altText: `รับเรื่องแล้ว ${item.case_code || ""}`,
-    contents: {
-      type: "bubble",
-      size: "mega",
-      header: {
-        type: "box",
-        layout: "vertical",
-        backgroundColor: "#0b7c86",
-        paddingAll: "18px",
-        contents: [
-          { type: "text", text: "ทีมงานรับข้อมูลแล้ว", color: "#ffffff", weight: "bold", size: "lg", align: "center" },
-          { type: "text", text: `เลขเคส: ${item.case_code || "-"}`, color: "#d9f3f5", size: "sm", margin: "sm", align: "center" }
-        ]
-      },
-      body: {
-        type: "box",
-        layout: "vertical",
-        spacing: "md",
-        paddingAll: "20px",
-        contents: [
-          { type: "text", text: `ชื่อ: ${item.full_name || "-"}`, wrap: true },
-          { type: "text", text: `พื้นที่: ${item.location || "-"}`, wrap: true },
-          { type: "text", text: `รายละเอียด: ${item.problem || "-"}`, wrap: true },
-          { type: "text", text: `เบอร์: ${item.phone || "-"}`, wrap: true },
-          { type: "separator", margin: "sm" },
-          { type: "text", text: "เราจะตรวจสอบและติดต่อกลับโดยเร็วที่สุด", size: "sm", color: "#4B5563", wrap: true, align: "center" }
-        ]
-      }
-    }
-  };
+  return buildHelpExecutiveSummaryFlex(item);
 }
 
 async function saveHelpRequest(userId, text) {
@@ -3429,6 +3412,12 @@ async function saveHelpRequest(userId, text) {
   if (!location) missing.push("พื้นที่");
   if (!problem) missing.push("รายละเอียด");
   if (!phone) missing.push("เบอร์");
+
+  if (phone && !isValidPhoneInput(phone)) {
+    const error = new Error("INVALID_PHONE_FORMAT");
+    error.code = "INVALID_PHONE_FORMAT";
+    throw error;
+  }
 
   if (missing.length > 0) {
     const error = new Error("INCOMPLETE_HELP_FORM");
@@ -5130,13 +5119,7 @@ if (text === "ขอความช่วยเหลือครั้งแร
   });
 
   await safeReply(replyToken, [
-    {
-      type: "text",
-      text:
-        "เริ่มกรอกข้อมูลขอความช่วยเหลือครับ\n\n" +
-        "ขอชื่อผู้ขอความช่วยเหลือก่อนครับ\n" +
-        "พิมพ์ 'ยกเลิก' ได้ทุกเมื่อหากต้องการหยุดฟอร์ม"
-    }
+    buildHelpStepFlex("name", {})
   ]);
   continue;
 }
@@ -5148,13 +5131,7 @@ if (isTemplateOnlyHelpForm(text)) {
   });
 
   await safeReply(replyToken, [
-    {
-      type: "text",
-      text:
-        "เริ่มกรอกข้อมูลขอความช่วยเหลือครับ\n\n" +
-        "ขอชื่อผู้ขอความช่วยเหลือก่อนครับ\n" +
-        "พิมพ์ 'ยกเลิก' ได้ทุกเมื่อหากต้องการหยุดฟอร์ม"
-    }
+    buildHelpStepFlex("name", {})
   ]);
   continue;
 }
@@ -5163,19 +5140,18 @@ if (helpState) {
   if (text === "ยกเลิก" || text === "ยกเลิกฟอร์ม") {
     clearHelpRequestState(userId);
     await safeReply(replyToken, [
-      {
-        type: "text",
-        text: "ยกเลิกการกรอกข้อมูลแล้วครับ\nพิมพ์ 'ขอความช่วยเหลือ' เพื่อเริ่มใหม่ได้ทุกเมื่อ"
-      }
+      buildHelpCancelFlex()
     ]);
     continue;
   }
 
   if (helpState.step === "waiting_name") {
-    const value = text.trim();
+    const value = sanitizeHelpWizardInput(text);
     if (!value) {
       await safeReply(replyToken, [
-        { type: "text", text: "กรุณาพิมพ์ชื่อผู้ขอความช่วยเหลือครับ" }
+        buildHelpStepFlex("name", helpState.data || {}, {
+          errorText: "กรุณาพิมพ์ชื่อผู้ขอความช่วยเหลือครับ"
+        })
       ]);
       continue;
     }
@@ -5191,16 +5167,18 @@ if (helpState) {
     });
 
     await safeReply(replyToken, [
-      { type: "text", text: buildHelpStepText("location", nextData) }
+      buildHelpStepFlex("location", nextData)
     ]);
     continue;
   }
 
   if (helpState.step === "waiting_location") {
-    const value = text.trim();
+    const value = sanitizeHelpWizardInput(text);
     if (!value) {
       await safeReply(replyToken, [
-        { type: "text", text: "กรุณาพิมพ์พื้นที่ / จังหวัด / จุดเกิดเหตุครับ" }
+        buildHelpStepFlex("location", helpState.data || {}, {
+          errorText: "กรุณาพิมพ์พื้นที่ / จังหวัด / จุดเกิดเหตุครับ"
+        })
       ]);
       continue;
     }
@@ -5216,16 +5194,18 @@ if (helpState) {
     });
 
     await safeReply(replyToken, [
-      { type: "text", text: buildHelpStepText("problem", nextData) }
+      buildHelpStepFlex("problem", nextData)
     ]);
     continue;
   }
 
   if (helpState.step === "waiting_problem") {
-    const value = text.trim();
+    const value = sanitizeHelpWizardInput(text);
     if (!value) {
       await safeReply(replyToken, [
-        { type: "text", text: "กรุณาพิมพ์รายละเอียดปัญหาที่ต้องการความช่วยเหลือครับ" }
+        buildHelpStepFlex("problem", helpState.data || {}, {
+          errorText: "กรุณาพิมพ์รายละเอียดปัญหาที่ต้องการความช่วยเหลือครับ"
+        })
       ]);
       continue;
     }
@@ -5241,13 +5221,13 @@ if (helpState) {
     });
 
     await safeReply(replyToken, [
-      { type: "text", text: buildHelpStepText("phone", nextData) }
+      buildHelpStepFlex("phone", nextData)
     ]);
     continue;
   }
 
   if (helpState.step === "waiting_phone") {
-    const value = text.trim();
+    const value = sanitizeHelpWizardInput(text);
     console.log("📞 STEP PHONE DEBUG:", {
   userId,
   step: helpState.step,
@@ -5257,14 +5237,26 @@ if (helpState) {
 });
     if (!value) {
       await safeReply(replyToken, [
-        { type: "text", text: "กรุณาพิมพ์เบอร์โทรติดต่อกลับครับ" }
+        buildHelpStepFlex("phone", helpState.data || {}, {
+          errorText: "กรุณาพิมพ์เบอร์โทรติดต่อกลับครับ"
+        })
+      ]);
+      continue;
+    }
+
+    const normalizedPhone = normalizePhoneInput(value);
+    if (!isValidPhoneInput(normalizedPhone)) {
+      await safeReply(replyToken, [
+        buildHelpStepFlex("phone", helpState.data || {}, {
+          errorText: "รูปแบบเบอร์โทรไม่ถูกต้อง กรุณากรอกเป็นตัวเลข 9-10 หลัก เช่น 0812345678"
+        })
       ]);
       continue;
     }
 
     const finalData = {
       ...helpState.data,
-      phone: value
+      phone: normalizedPhone
     };
 console.log("✅ FINAL DATA BEFORE SAVE:", {
   userId,
@@ -5276,16 +5268,7 @@ console.log("✅ FINAL DATA BEFORE SAVE:", {
 
       await safeReply(
         replyToken,
-        [buildUserCaseReceivedFlex(insertedCase)],
-        [
-          {
-            type: "text",
-            text:
-              "ทีมงานได้รับข้อมูลแล้วครับ 🙏\n" +
-              `เลขเคสของคุณคือ ${insertedCase.case_code}\n` +
-              "เราจะตรวจสอบและติดต่อกลับโดยเร็วที่สุด"
-          }
-        ]
+        [buildUserCaseReceivedFlex(insertedCase)]
       );
 
       try {
@@ -5310,6 +5293,14 @@ console.log("✅ FINAL DATA BEFORE SAVE:", {
       }
     } catch (err) {
       console.error("STEP FLOW SAVE HELP REQUEST FAILED:", err);
+      if (err?.code === "INVALID_PHONE_FORMAT") {
+        await safeReply(replyToken, [
+          buildHelpStepFlex("phone", helpState.data || {}, {
+            errorText: "รูปแบบเบอร์โทรไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง"
+          })
+        ]);
+        continue;
+      }
       await safeReply(replyToken, [
         {
           type: "text",
