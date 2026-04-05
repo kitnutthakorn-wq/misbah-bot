@@ -607,7 +607,7 @@ function buildHelpExecutiveSummaryFlex(item = {}) {
             type: "box",
             layout: "vertical",
             backgroundColor: COLORS.brand,
-            cornerRadius: "20px",
+            
             paddingAll: "18px",
             spacing: "sm",
             contents: [
