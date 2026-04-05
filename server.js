@@ -5068,7 +5068,14 @@ if (text === "ขอความช่วยเหลือ") {
   await safeReply(replyToken, [buildHelpRequestChoiceFlex()]);
   continue;
 }
+if (text === "ขอความช่วยเหลือ") {
+  await safeReply(replyToken, [buildHelpRequestChoiceFlex()]);
+  continue;
+}
 
+// ✅ วาง STEP FLOW ตรงนี้เลย
+
+if (text === "อัปเดตเคส") {
 if (text === "ขอความช่วยเหลือครั้งแรก") {
   await safeReply(replyToken, [buildHelpFormFlex()], [
     {
