@@ -549,7 +549,7 @@ function buildHelpExecutiveSummaryFlex(item = {}) {
                 aspectRatio: "1:1",
                 flex: 0,
                 backgroundColor: COLORS.white,
-                cornerRadius: "999px"
+                
               },
               {
                 type: "box",
