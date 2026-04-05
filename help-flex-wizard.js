@@ -458,7 +458,7 @@ function buildHelpConfirmFlex(data = {}, options = {}) {
       type: "box",
       layout: "vertical",
       backgroundColor: "#ececec",
-      cornerRadius: "18px",
+     
       paddingAll: "18px",
       spacing: "sm",
       contents: [
