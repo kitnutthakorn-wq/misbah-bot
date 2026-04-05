@@ -165,7 +165,10 @@ async function saveHelpRequestFromState(userId, payload = {}) {
     .select()
     .single();
 
-  if (error) throw error;
+ if (error) {
+  console.error("INSERT ERROR:", error);
+  throw error;
+}
 
   broadcastSse("case_created", {
     case_id: data.id,
