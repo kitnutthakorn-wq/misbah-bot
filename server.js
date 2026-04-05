@@ -159,14 +159,13 @@ console.log("🔥 SAVE DEBUG:", {
     .insert([
       {
         case_code,
-        line_user_id: userId || "",
-        full_name,
-        phone,
-        location,
-        problem,
-        status: "new",
-        priority,
-        notify_status: "pending"
+  full_name,
+  phone,
+  location,
+  problem,
+  status: "new",
+  priority,
+  notify_status: "pending"
       }
     ])
     .select()
