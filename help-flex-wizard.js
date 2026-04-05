@@ -1,539 +1,712 @@
-"use strict";
+const DEFAULT_LOGO_URL =
+  process.env.MISBAHUL_AITAM_LOGO_URL ||
+  "https://img1.pic.in.th/images/Logo223376766a03d608d.png";
 
-const TOTAL_STEPS = 5;
-const BRAND = {
-  primary: "#0B7C86",
-  secondary: "#163C72",
-  accent: "#C9A227",
-  soft: "#F7FBFC",
-  line: "#D7E7EA",
-  danger: "#DC2626",
-  success: "#1F8F4D",
-  muted: "#5F7285"
+const COLORS = {
+  brand: "#0b7c86",
+  brandDark: "#0a5f67",
+  brandSoft: "#e8f7f8",
+  text: "#102a43",
+  muted: "#5f6c7b",
+  border: "#c9d6df",
+  danger: "#ff1a12",
+  dangerSoft: "#ffe9e7",
+  cardSoft: "#efefef",
+  white: "#ffffff",
+  progressOn: "#d9b11f",
+  progressOff: "#d7e2e5",
+  success: "#118a61"
 };
 
-function cleanText(value = "") {
-  return String(value == null ? "" : value).trim();
+const WIZARD_CONTROL_COMMANDS = new Set([
+  "พิมพ์ข้อมูลต่อ",
+  "พิมพ์ข้อมูลในช่องแชท",
+  "ถัดไป",
+  "พร้อมกรอกข้อมูล",
+  "ยกเลิก",
+  "ยกเลิกฟอร์ม",
+  "กลับสู่เมนูหลักขอความช่วยเหลือ",
+  "กลับสู่เมนูหลัก",
+  "ส่งข้อมูล",
+  "ส่งข้อมูล / sent",
+  "แก้ไขข้อมูล",
+  "sent"
+]);
+
+const STEP_META = {
+  name: {
+    order: 1,
+    title: "พิมพ์ชื่อและนามสกุล",
+    example: "ตัวอย่าง: นายสมชาย ใจดี",
+    helper: "กรุณาพิมพ์ข้อมูลตามคำสั่งด้านล่าง"
+  },
+  location: {
+    order: 2,
+    title: "พิมพ์สถานที่ / พื้นที่เกิดเหตุ",
+    example: "ตัวอย่าง: 79 ต.ละงู อ.เมือง จ.สตูล",
+    helper: "กรุณาพิมพ์ข้อมูลตามคำสั่งด้านล่าง"
+  },
+  problem: {
+    order: 3,
+    title: "พิมพ์รายละเอียดที่ต้องการความช่วยเหลือ",
+    example: "ตัวอย่าง: ต้องการทุนในการศึกษาต่อ",
+    helper: "กรุณาพิมพ์ข้อมูลตามคำสั่งด้านล่าง"
+  },
+  phone: {
+    order: 4,
+    title: "พิมพ์หมายเลขโทรศัพท์",
+    example: "ตัวอย่าง: 0935826662",
+    helper: "กรุณาพิมพ์ข้อมูลตามคำสั่งด้านล่าง"
+  },
+  confirm: {
+    order: 5,
+    title: "กรุณาตรวจสอบความถูกต้องของข้อมูล",
+    example: "หากข้อมูลถูกต้องให้กดส่งข้อมูล",
+    helper: "ตรวจสอบข้อมูลก่อนส่งเข้าสู่ระบบ"
+  }
+};
+
+function cleanText(value) {
+  return String(value ?? "").replace(/\r/g, "").trim();
 }
 
 function sanitizeHelpWizardInput(value = "") {
-  return cleanText(String(value).replace(/\s+/g, " "));
+  return cleanText(value)
+    .replace(/\u200b/g, "")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n");
+}
+
+function isWizardControlCommand(value = "") {
+  return WIZARD_CONTROL_COMMANDS.has(cleanText(value).toLowerCase());
 }
 
 function normalizePhoneInput(value = "") {
-  const digits = String(value || "").replace(/\D/g, "");
+  let digits = String(value || "").replace(/\D/g, "");
   if (digits.startsWith("66") && digits.length >= 11) {
-    return `0${digits.slice(2)}`;
+    digits = `0${digits.slice(2)}`;
+  }
+  if (digits.startsWith("0066") && digits.length >= 13) {
+    digits = `0${digits.slice(4)}`;
   }
   return digits;
 }
 
 function isValidPhoneInput(value = "") {
-  const normalized = normalizePhoneInput(value);
-  return /^0\d{8,9}$/.test(normalized);
+  const digits = normalizePhoneInput(value);
+  return /^0\d{8,9}$/.test(digits);
 }
 
-function formatPhoneForDisplay(value = "") {
-  const normalized = normalizePhoneInput(value);
-  if (!normalized) return "-";
-  if (normalized.length === 10) {
-    return `${normalized.slice(0,3)}-${normalized.slice(3,6)}-${normalized.slice(6)}`;
+function looksLikeAddressOnly(value = "") {
+  const text = cleanText(value);
+  const hasAddressHint = /(ต\.|ตำบล|อ\.|อำเภอ|จ\.|จังหวัด|หมู่|ม\.|ซอย|ถนน)/.test(text);
+  const hasNeedHint = /(ต้องการ|ขอ|ช่วย|ทุน|อาหาร|ยา|ค่ารักษา|ที่พัก|ซ่อม|เรียน|ศึกษา)/.test(text);
+  return hasAddressHint && !hasNeedHint;
+}
+
+function validateHelpWizardField(step = "", value = "", data = {}) {
+  const text = sanitizeHelpWizardInput(value);
+
+  if (!text) {
+    return { ok: false, message: "กรุณาพิมพ์ข้อมูลจริงในช่องแชทด้านล่าง", value: "" };
   }
-  if (normalized.length === 9) {
-    return `${normalized.slice(0,2)}-${normalized.slice(2,5)}-${normalized.slice(5)}`;
+
+  if (isWizardControlCommand(text)) {
+    return { ok: false, message: "กรุณาพิมพ์ข้อมูลจริงในช่องแชทด้านล่าง", value: "" };
   }
-  return normalized;
+
+  if (step === "name") {
+    if (text.length < 3) {
+      return { ok: false, message: "กรุณากรอกชื่อและนามสกุลให้ชัดเจน", value: text };
+    }
+    if (/^\d+$/.test(text)) {
+      return { ok: false, message: "ชื่อไม่ควรเป็นตัวเลขล้วน", value: text };
+    }
+    return { ok: true, value: text };
+  }
+
+  if (step === "location") {
+    if (text.length < 5) {
+      return { ok: false, message: "กรุณากรอกสถานที่ให้ละเอียดมากขึ้น", value: text };
+    }
+    if (/พร้อมกรอกข้อมูล/i.test(text)) {
+      return { ok: false, message: "กรุณากรอกสถานที่จริง เช่น ตำบล อำเภอ จังหวัด", value: text };
+    }
+    return { ok: true, value: text };
+  }
+
+  if (step === "problem") {
+    if (text.length < 10) {
+      return { ok: false, message: "กรุณากรอกรายละเอียดปัญหาให้มากขึ้น", value: text };
+    }
+    if (/พร้อมกรอกข้อมูล/i.test(text)) {
+      return { ok: false, message: "กรุณากรอกรายละเอียดปัญหาที่ต้องการความช่วยเหลือ", value: text };
+    }
+    if (looksLikeAddressOnly(text)) {
+      return { ok: false, message: "รายละเอียดควรเป็นปัญหาที่ต้องการความช่วยเหลือ ไม่ใช่เฉพาะที่อยู่", value: text };
+    }
+    return { ok: true, value: text };
+  }
+
+  if (step === "phone") {
+    const phone = normalizePhoneInput(text);
+    if (!isValidPhoneInput(phone)) {
+      return { ok: false, message: "กรุณากรอกเบอร์โทรให้ถูกต้อง เช่น 0812345678", value: phone };
+    }
+    return { ok: true, value: phone };
+  }
+
+  if (step === "confirm") {
+    return { ok: true, value: text };
+  }
+
+  return { ok: false, message: "ไม่พบขั้นตอนการกรอกข้อมูล", value: text };
 }
 
-function logoHero() {
-  const logoUrl = cleanText(process.env.MISBAHUL_AITAM_LOGO_URL || "");
-  if (!logoUrl) return null;
-  return {
-    type: "image",
-    url: logoUrl,
-    size: "full",
-    aspectRatio: "20:8",
-    aspectMode: "fit",
-    backgroundColor: "#FFFFFF"
-  };
-}
-
-function progressBar(stepNumber = 1) {
-  const bars = [];
-  for (let i = 1; i <= TOTAL_STEPS; i += 1) {
-    bars.push({
+function progressBar(stepOrder = 1) {
+  const items = [];
+  for (let i = 1; i <= 5; i += 1) {
+    items.push({
       type: "box",
       layout: "vertical",
       flex: 1,
-      height: "8px",
+      height: "10px",
       cornerRadius: "999px",
-      backgroundColor: i <= stepNumber ? BRAND.accent : "#D8E5E8",
+      backgroundColor: i <= stepOrder ? COLORS.progressOn : COLORS.progressOff,
       contents: []
     });
   }
-  return {
-    type: "box",
-    layout: "horizontal",
-    spacing: "sm",
-    margin: "md",
-    contents: bars
-  };
+  return items;
 }
 
-function dataRows(data = {}) {
-  const rows = [];
-  if (cleanText(data.full_name)) rows.push(`ชื่อ: ${cleanText(data.full_name)}`);
-  if (cleanText(data.location)) rows.push(`พื้นที่: ${cleanText(data.location)}`);
-  if (cleanText(data.problem)) rows.push(`รายละเอียด: ${cleanText(data.problem)}`);
-  if (cleanText(data.phone)) rows.push(`เบอร์: ${formatPhoneForDisplay(data.phone)}`);
-  return rows.map((text) => ({
-    type: "text",
-    text,
-    size: "sm",
-    color: "#1F2937",
-    wrap: true,
-    margin: "sm"
-  }));
-}
-
-function buildHeader(stepNumber, title, subtitle) {
+function buildBrandHeader(stepKey = "name") {
+  const meta = STEP_META[stepKey] || STEP_META.name;
   return {
     type: "box",
     layout: "vertical",
-    backgroundColor: BRAND.secondary,
+    backgroundColor: COLORS.brand,
     paddingAll: "18px",
+    spacing: "md",
     contents: [
       {
-        type: "text",
-        text: "Misbahul Aitam",
-        color: "#F8FAFC",
-        weight: "bold",
-        size: "lg",
-        align: "center"
+        type: "box",
+        layout: "horizontal",
+        spacing: "md",
+        contents: [
+          {
+            type: "image",
+            url: DEFAULT_LOGO_URL,
+            size: "xxs",
+            aspectMode: "cover",
+            aspectRatio: "1:1",
+            flex: 0,
+            backgroundColor: COLORS.white,
+            cornerRadius: "999px"
+          },
+          {
+            type: "box",
+            layout: "vertical",
+            flex: 1,
+            contents: [
+              {
+                type: "text",
+                text: "Misbahul Aitam",
+                color: COLORS.white,
+                weight: "bold",
+                size: "xl",
+                wrap: true
+              },
+              {
+                type: "text",
+                text: "แบบฟอร์มขอความช่วยเหลือ",
+                color: COLORS.white,
+                size: "md",
+                weight: "bold",
+                wrap: true,
+                margin: "sm"
+              },
+              {
+                type: "text",
+                text: meta.helper,
+                color: "#d8f5f7",
+                size: "sm",
+                wrap: true,
+                margin: "sm"
+              }
+            ]
+          }
+        ]
       },
       {
-        type: "text",
-        text: title,
-        color: "#FFFFFF",
-        weight: "bold",
-        size: "xl",
-        align: "center",
-        margin: "md",
-        wrap: true
-      },
-      {
-        type: "text",
-        text: subtitle,
-        color: "#DDEAF7",
-        size: "sm",
-        align: "center",
-        margin: "sm",
-        wrap: true
-      },
-      {
-        type: "text",
-        text: `ขั้นตอน ${stepNumber}/${TOTAL_STEPS}`,
-        color: "#FDE68A",
-        size: "xs",
-        weight: "bold",
-        align: "center",
-        margin: "md"
-      },
-      progressBar(stepNumber)
+        type: "box",
+        layout: "vertical",
+        spacing: "sm",
+        contents: [
+          {
+            type: "text",
+            text: `ขั้นตอน ${meta.order}/5`,
+            color: COLORS.white,
+            size: "sm",
+            weight: "bold",
+            align: "center"
+          },
+          {
+            type: "box",
+            layout: "horizontal",
+            spacing: "sm",
+            contents: progressBar(meta.order)
+          }
+        ]
+      }
     ]
   };
 }
 
-function buildStepConfig(step = "name", data = {}) {
-  switch (step) {
-    case "name":
-      return {
-        number: 1,
-        title: "กรุณาพิมพ์ชื่อและนามสกุล",
-        subtitle: "เพื่อให้ทีมงานติดต่อและบันทึกข้อมูลได้ถูกต้อง",
-        hint: "ตัวอย่าง: นายสมชาย ใจดี"
-      };
-    case "location":
-      return {
-        number: 2,
-        title: "กรุณาพิมพ์สถานที่ / พื้นที่เกิดเหตุ",
-        subtitle: "ระบุอำเภอ จังหวัด หรือจุดสังเกตสำคัญให้ชัดเจน",
-        hint: "ตัวอย่าง: ต.จะบังติกอ อ.เมือง จ.ปัตตานี"
-      };
-    case "problem":
-      return {
-        number: 3,
-        title: "กรุณาพิมพ์รายละเอียดปัญหา",
-        subtitle: "เล่าให้ทีมงานเข้าใจสิ่งที่ต้องการความช่วยเหลือมากที่สุด",
-        hint: "ตัวอย่าง: ไม่มีอาหาร เด็กเล็ก 2 คน บ้านเสียหายจากพายุ"
-      };
-    case "phone":
-      return {
-        number: 4,
-        title: "กรุณาพิมพ์เบอร์โทรติดต่อกลับ",
-        subtitle: "ระบบจะตรวจสอบรูปแบบให้อัตโนมัติ",
-        hint: "ตัวอย่าง: 0812345678"
-      };
-    case "summary":
-      return {
-        number: 5,
-        title: "ตรวจสอบข้อมูลก่อนยืนยัน",
-        subtitle: "หากข้อมูลถูกต้อง ให้พิมพ์เบอร์โทรอีกครั้งหรือกดส่งต่อ",
-        hint: "ทีมงานจะใช้ข้อมูลนี้ในการประสานงาน"
-      };
-    default:
-      return {
-        number: 1,
-        title: "กรุณากรอกข้อมูล",
-        subtitle: "ระบบจะพาไปทีละขั้นตอน",
-        hint: ""
-      };
-  }
+function detailSummary(data = {}) {
+  const rows = [];
+  if (data.full_name) rows.push(`ชื่อ: ${data.full_name}`);
+  if (data.location) rows.push(`ที่อยู่: ${data.location}`);
+  if (data.problem) rows.push(`รายละเอียด: ${data.problem}`);
+  if (data.phone) rows.push(`หมายเลขโทรศัพท์ติดต่อ: ${data.phone}`);
+  return rows;
 }
 
-function buildHelpStepFlex(step = "name", data = {}, options = {}) {
-  const cfg = buildStepConfig(step, data);
-  const bodyContents = [
+function buildDataBox(data = {}) {
+  const rows = detailSummary(data);
+  if (!rows.length) return null;
+  return {
+    type: "box",
+    layout: "vertical",
+    backgroundColor: COLORS.white,
+    borderColor: COLORS.border,
+    borderWidth: "1px",
+    cornerRadius: "16px",
+    paddingAll: "16px",
+    spacing: "sm",
+    contents: [
+      {
+        type: "text",
+        text: "ข้อมูลที่กรอกแล้ว",
+        color: COLORS.brand,
+        weight: "bold",
+        size: "md"
+      },
+      ...rows.map((row) => ({
+        type: "text",
+        text: row,
+        wrap: true,
+        color: COLORS.text,
+        size: "sm"
+      }))
+    ]
+  };
+}
+
+function buildErrorBox(errorText = "") {
+  if (!errorText) return null;
+  return {
+    type: "box",
+    layout: "vertical",
+    backgroundColor: COLORS.dangerSoft,
+    cornerRadius: "14px",
+    paddingAll: "14px",
+    contents: [
+      {
+        type: "text",
+        text: errorText,
+        color: COLORS.danger,
+        wrap: true,
+        size: "sm",
+        weight: "bold",
+        align: "center"
+      }
+    ]
+  };
+}
+
+function buildInstructionCard(stepKey = "name") {
+  const meta = STEP_META[stepKey] || STEP_META.name;
+  return {
+    type: "box",
+    layout: "vertical",
+    backgroundColor: "#ececec",
+    cornerRadius: "18px",
+    paddingAll: "22px",
+    spacing: "md",
+    contents: [
+      {
+        type: "text",
+        text: meta.title,
+        size: "xxl",
+        weight: "bold",
+        color: "#000000",
+        wrap: true,
+        align: "center"
+      },
+      {
+        type: "text",
+        text: "ในช่องแชทข้อความด้านล่าง",
+        size: "xl",
+        weight: "bold",
+        color: "#000000",
+        wrap: true,
+        align: "center"
+      },
+      {
+        type: "text",
+        text: meta.example,
+        size: "sm",
+        color: COLORS.muted,
+        wrap: true,
+        align: "center"
+      }
+    ]
+  };
+}
+
+function buildHelpStepFlex(stepKey = "name", data = {}, options = {}) {
+  const contents = [
     {
-      type: "box",
-      layout: "vertical",
-      backgroundColor: BRAND.soft,
-      borderColor: BRAND.line,
-      borderWidth: "1px",
-      cornerRadius: "18px",
-      paddingAll: "16px",
-      contents: [
-        {
-          type: "text",
-          text: cfg.title,
-          size: "xl",
-          weight: "bold",
-          color: BRAND.secondary,
-          align: "center",
-          wrap: true
-        },
-        {
-          type: "text",
-          text: cfg.hint,
-          size: "sm",
-          color: BRAND.muted,
-          align: "center",
-          margin: "md",
-          wrap: true
-        }
-      ]
+      type: "text",
+      text: stepKey === "name" ? "เริ่มกรอกข้อมูลขอความช่วยเหลือครับ" : "กรุณากรอกข้อมูลตามขั้นตอน",
+      size: "xl",
+      weight: "bold",
+      color: "#000000",
+      wrap: true,
+      align: "center"
+    },
+    buildInstructionCard(stepKey)
+  ];
+
+  const errorBox = buildErrorBox(options.errorText || "");
+  if (errorBox) contents.push(errorBox);
+
+  const dataBox = buildDataBox(data);
+  if (dataBox) contents.push(dataBox);
+
+  contents.push(
+    {
+      type: "button",
+      style: "primary",
+      color: COLORS.brand,
+      height: "md",
+      action: {
+        type: "message",
+        label: "พิมพ์ข้อมูลในช่องแชท",
+        text: "พิมพ์ข้อมูลในช่องแชท"
+      }
+    },
+    {
+      type: "button",
+      style: "primary",
+      color: COLORS.danger,
+      height: "md",
+      action: {
+        type: "message",
+        label: "ยกเลิก",
+        text: "ยกเลิก"
+      }
+    }
+  );
+
+  return {
+    type: "flex",
+    altText: `แบบฟอร์มขอความช่วยเหลือ ขั้นตอน ${STEP_META[stepKey]?.order || 1}/5`,
+    contents: {
+      type: "bubble",
+      size: "mega",
+      header: buildBrandHeader(stepKey),
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "lg",
+        paddingAll: "18px",
+        contents
+      }
+    }
+  };
+}
+
+function buildHelpConfirmFlex(data = {}, options = {}) {
+  const detailRows = detailSummary(data).map((row) => ({
+    type: "text",
+    text: row,
+    wrap: true,
+    size: "lg",
+    weight: "bold",
+    color: "#000000",
+    align: "center"
+  }));
+
+  const contents = [
+    {
+      type: "text",
+      text: "กรุณาตรวจสอบความถูกต้องของข้อมูล",
+      size: "xxl",
+      weight: "bold",
+      color: "#0f3f9b",
+      wrap: true,
+      align: "center"
     }
   ];
 
-  const rows = dataRows(data);
-  if (rows.length) {
-    bodyContents.push({
-      type: "box",
-      layout: "vertical",
-      backgroundColor: "#FFFFFF",
-      borderColor: BRAND.line,
-      borderWidth: "1px",
-      cornerRadius: "16px",
-      paddingAll: "14px",
-      margin: "md",
-      contents: [
-        {
-          type: "text",
-          text: "ข้อมูลที่กรอกแล้ว",
-          size: "sm",
-          weight: "bold",
-          color: BRAND.primary
-        },
-        ...rows
-      ]
-    });
-  }
+  const errorBox = buildErrorBox(options.errorText || "");
+  if (errorBox) contents.push(errorBox);
 
-  if (cleanText(options.errorText)) {
-    bodyContents.push({
+  contents.push(
+    {
       type: "box",
       layout: "vertical",
-      backgroundColor: "#FEF2F2",
-      borderColor: "#FECACA",
-      borderWidth: "1px",
-      cornerRadius: "16px",
-      paddingAll: "14px",
-      margin: "md",
-      contents: [
-        {
-          type: "text",
-          text: options.errorText,
-          size: "sm",
-          weight: "bold",
-          color: BRAND.danger,
-          wrap: true,
-          align: "center"
-        }
-      ]
-    });
-  }
-
-  const bubble = {
-    type: "bubble",
-    size: "mega",
-    header: buildHeader(cfg.number, cfg.title, cfg.subtitle),
-    body: {
-      type: "box",
-      layout: "vertical",
-      spacing: "md",
+      backgroundColor: "#ececec",
+      cornerRadius: "18px",
       paddingAll: "18px",
-      contents: bodyContents
-    },
-    footer: {
-      type: "box",
-      layout: "vertical",
       spacing: "sm",
-      paddingAll: "18px",
-      contents: [
-        {
-          type: "button",
-          style: "primary",
-          color: BRAND.primary,
-          height: "md",
-          action: {
-            type: "message",
-            label: "พิมพ์ข้อมูลต่อ",
-            text: step === "phone" ? "0812345678" : "พร้อมกรอกข้อมูล"
-          }
-        },
-        {
-          type: "button",
-          style: "secondary",
-          height: "md",
-          action: {
-            type: "message",
-            label: "ยกเลิกฟอร์ม",
-            text: "ยกเลิกฟอร์ม"
-          }
-        }
-      ]
-    }
-  };
-
-  const hero = logoHero();
-  if (hero) bubble.hero = hero;
-
-  return {
-    type: "flex",
-    altText: `${cfg.title} (ขั้นตอน ${cfg.number}/${TOTAL_STEPS})`,
-    contents: bubble
-  };
-}
-
-function buildHelpCancelFlex() {
-  const bubble = {
-    type: "bubble",
-    size: "mega",
-    header: {
-      type: "box",
-      layout: "vertical",
-      backgroundColor: BRAND.danger,
-      paddingAll: "18px",
       contents: [
         {
           type: "text",
-          text: "ยกเลิกการกรอกข้อมูลแล้ว",
-          color: "#FFFFFF",
-          weight: "bold",
+          text: "รายละเอียด:",
           size: "xl",
-          align: "center",
-          wrap: true
-        }
-      ]
-    },
-    body: {
-      type: "box",
-      layout: "vertical",
-      paddingAll: "18px",
-      contents: [
-        {
-          type: "text",
-          text: "หากต้องการเริ่มใหม่ พิมพ์ 'ขอความช่วยเหลือ' ได้ทุกเมื่อ",
-          size: "md",
-          color: BRAND.secondary,
-          wrap: true,
+          weight: "bold",
+          color: "#000000",
           align: "center"
-        }
+        },
+        ...detailRows
       ]
     },
-    footer: {
-      type: "box",
-      layout: "vertical",
-      paddingAll: "18px",
-      contents: [
-        {
-          type: "button",
-          style: "primary",
-          color: BRAND.primary,
-          action: {
-            type: "message",
-            label: "เริ่มใหม่",
-            text: "ขอความช่วยเหลือ"
-          }
-        }
-      ]
+    {
+      type: "button",
+      style: "primary",
+      color: COLORS.brand,
+      height: "md",
+      action: {
+        type: "message",
+        label: "แก้ไขข้อมูล",
+        text: "แก้ไขข้อมูล"
+      }
+    },
+    {
+      type: "button",
+      style: "primary",
+      color: COLORS.danger,
+      height: "md",
+      action: {
+        type: "message",
+        label: "ส่งข้อมูล / SENT",
+        text: "ส่งข้อมูล / SENT"
+      }
     }
-  };
-
-  const hero = logoHero();
-  if (hero) bubble.hero = hero;
+  );
 
   return {
     type: "flex",
-    altText: "ยกเลิกการกรอกข้อมูล",
-    contents: bubble
+    altText: "ตรวจสอบข้อมูลก่อนส่ง",
+    contents: {
+      type: "bubble",
+      size: "mega",
+      header: buildBrandHeader("confirm"),
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "lg",
+        paddingAll: "18px",
+        contents
+      }
+    }
   };
 }
 
 function buildHelpExecutiveSummaryFlex(item = {}) {
-  const bubble = {
-    type: "bubble",
-    size: "mega",
-    header: {
-      type: "box",
-      layout: "vertical",
-      backgroundColor: BRAND.success,
-      paddingAll: "18px",
-      contents: [
-        {
-          type: "text",
-          text: "ทีมงานรับข้อมูลแล้ว",
-          color: "#FFFFFF",
-          weight: "bold",
-          size: "xl",
-          align: "center"
-        },
-        {
-          type: "text",
-          text: `เลขเคส ${cleanText(item.case_code) || "-"}`,
-          color: "#DCFCE7",
-          size: "md",
-          weight: "bold",
-          align: "center",
-          margin: "sm"
-        },
-        {
-          type: "text",
-          text: "Executive Summary",
-          color: "#ECFCCB",
-          size: "xs",
-          align: "center",
-          margin: "sm"
-        }
-      ]
-    },
-    body: {
-      type: "box",
-      layout: "vertical",
-      spacing: "md",
-      paddingAll: "18px",
-      contents: [
-        {
-          type: "box",
-          layout: "horizontal",
-          spacing: "sm",
-          contents: [
-            {
-              type: "box",
-              layout: "vertical",
-              flex: 1,
-              backgroundColor: "#EFF6FF",
-              cornerRadius: "14px",
-              paddingAll: "12px",
-              contents: [
-                { type: "text", text: "สถานะ", size: "xs", color: BRAND.muted, align: "center" },
-                { type: "text", text: "รับเรื่องแล้ว", size: "sm", weight: "bold", color: BRAND.secondary, align: "center", margin: "sm" }
-              ]
-            },
-            {
-              type: "box",
-              layout: "vertical",
-              flex: 1,
-              backgroundColor: "#FEFCE8",
-              cornerRadius: "14px",
-              paddingAll: "12px",
-              contents: [
-                { type: "text", text: "ระดับเคส", size: "xs", color: BRAND.muted, align: "center" },
-                { type: "text", text: cleanText(item.priority) === "urgent" ? "ด่วน" : "ปกติ", size: "sm", weight: "bold", color: cleanText(item.priority) === "urgent" ? BRAND.danger : BRAND.primary, align: "center", margin: "sm" }
-              ]
-            }
-          ]
-        },
-        {
-          type: "box",
-          layout: "vertical",
-          backgroundColor: "#FFFFFF",
-          borderColor: BRAND.line,
-          borderWidth: "1px",
-          cornerRadius: "16px",
-          paddingAll: "14px",
-          contents: [
-            { type: "text", text: `ชื่อ: ${cleanText(item.full_name) || "-"}`, size: "sm", wrap: true },
-            { type: "text", text: `พื้นที่: ${cleanText(item.location) || "-"}`, size: "sm", wrap: true, margin: "sm" },
-            { type: "text", text: `รายละเอียด: ${cleanText(item.problem) || "-"}`, size: "sm", wrap: true, margin: "sm" },
-            { type: "text", text: `เบอร์: ${formatPhoneForDisplay(item.phone)}`, size: "sm", wrap: true, margin: "sm" }
-          ]
-        },
-        {
-          type: "text",
-          text: "ทีมงานจะตรวจสอบและประสานงานกลับโดยเร็วที่สุด",
-          size: "sm",
-          color: BRAND.muted,
-          align: "center",
-          wrap: true
-        }
-      ]
-    },
-    footer: {
-      type: "box",
-      layout: "vertical",
-      spacing: "sm",
-      paddingAll: "18px",
-      contents: [
-        {
-          type: "button",
-          style: "primary",
-          color: BRAND.primary,
-          action: {
-            type: "message",
-            label: "ติดตามการขอความช่วยเหลือ",
-            text: "ติดตามการขอความช่วยเหลือ"
-          }
-        },
-        {
-          type: "button",
-          style: "secondary",
-          action: {
-            type: "message",
-            label: "ติดต่อเจ้าหน้าที่",
-            text: "ติดต่อเจ้าหน้าที่"
-          }
-        }
-      ]
-    }
-  };
-
-  const hero = logoHero();
-  if (hero) bubble.hero = hero;
+  const rows = [
+    `ชื่อ:${item.full_name || "-"}`,
+    `ที่อยู่:${item.location || "-"}`,
+    `รายละเอียด:${item.problem || "-"}`,
+    `หมายเลขโทรศัพท์ติดต่อ:${item.phone || "-"}`
+  ];
 
   return {
     type: "flex",
-    altText: `ทีมงานรับข้อมูลแล้ว ${cleanText(item.case_code) || ""}`,
-    contents: bubble
+    altText: `ทีมงานรับข้อมูลแล้ว ${item.case_code || ""}`,
+    contents: {
+      type: "bubble",
+      size: "mega",
+      header: {
+        type: "box",
+        layout: "vertical",
+        backgroundColor: COLORS.brand,
+        paddingAll: "18px",
+        spacing: "md",
+        contents: [
+          {
+            type: "box",
+            layout: "horizontal",
+            spacing: "md",
+            contents: [
+              {
+                type: "image",
+                url: DEFAULT_LOGO_URL,
+                size: "xxs",
+                aspectMode: "cover",
+                aspectRatio: "1:1",
+                flex: 0,
+                backgroundColor: COLORS.white,
+                cornerRadius: "999px"
+              },
+              {
+                type: "box",
+                layout: "vertical",
+                flex: 1,
+                contents: [
+                  {
+                    type: "text",
+                    text: "Misbahul Aitam",
+                    color: COLORS.white,
+                    weight: "bold",
+                    size: "xl",
+                    wrap: true
+                  },
+                  {
+                    type: "text",
+                    text: "แบบฟอร์มขอความช่วยเหลือ",
+                    color: COLORS.white,
+                    size: "md",
+                    weight: "bold",
+                    wrap: true,
+                    margin: "sm"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "lg",
+        paddingAll: "18px",
+        contents: [
+          {
+            type: "text",
+            text: "ทีมงานรับข้อมูลแล้ว",
+            size: "xxl",
+            weight: "bold",
+            color: "#0f3f9b",
+            wrap: true,
+            align: "center"
+          },
+          {
+            type: "text",
+            text: `หมายเลขเคส : ${item.case_code || "-"}`,
+            size: "xl",
+            weight: "bold",
+            color: "#000000",
+            wrap: true,
+            align: "center"
+          },
+          {
+            type: "box",
+            layout: "vertical",
+            backgroundColor: COLORS.brand,
+            cornerRadius: "20px",
+            paddingAll: "18px",
+            spacing: "sm",
+            contents: [
+              {
+                type: "text",
+                text: "รายละเอียด:",
+                size: "xl",
+                weight: "bold",
+                color: COLORS.white,
+                align: "center"
+              },
+              ...rows.map((row) => ({
+                type: "text",
+                text: row,
+                wrap: true,
+                size: "xl",
+                weight: "bold",
+                color: COLORS.white,
+                align: "center"
+              }))
+            ]
+          },
+          {
+            type: "text",
+            text: "ทางทีมงานของมูลนิธิจะรีบตรวจสอบและดำเนินการติดต่อกลับโดยเร็วที่สุด",
+            size: "lg",
+            weight: "bold",
+            color: "#000000",
+            wrap: true,
+            align: "center"
+          }
+        ]
+      }
+    }
+  };
+}
+
+function buildHelpCancelFlex() {
+  return {
+    type: "flex",
+    altText: "ยกเลิกการกรอกข้อมูลแล้ว",
+    contents: {
+      type: "bubble",
+      size: "mega",
+      header: {
+        type: "box",
+        layout: "vertical",
+        backgroundColor: COLORS.danger,
+        paddingAll: "18px",
+        contents: [
+          {
+            type: "text",
+            text: "ยกเลิกฟอร์มแล้ว",
+            color: COLORS.white,
+            weight: "bold",
+            size: "xl",
+            align: "center"
+          }
+        ]
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "lg",
+        paddingAll: "18px",
+        contents: [
+          {
+            type: "text",
+            text: "คุณสามารถพิมพ์ 'ขอความช่วยเหลือ' เพื่อเริ่มต้นใหม่ได้ทุกเมื่อ",
+            wrap: true,
+            size: "lg",
+            weight: "bold",
+            color: "#000000",
+            align: "center"
+          },
+          {
+            type: "button",
+            style: "primary",
+            color: COLORS.brand,
+            action: {
+              type: "message",
+              label: "กลับสู่เมนูหลักขอความช่วยเหลือ",
+              text: "ขอความช่วยเหลือ"
+            }
+          }
+        ]
+      }
+    }
   };
 }
 
 module.exports = {
   buildHelpStepFlex,
   buildHelpCancelFlex,
+  buildHelpConfirmFlex,
   buildHelpExecutiveSummaryFlex,
   sanitizeHelpWizardInput,
   normalizePhoneInput,
   isValidPhoneInput,
-  formatPhoneForDisplay
+  validateHelpWizardField,
+  isWizardControlCommand
 };

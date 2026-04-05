@@ -17,10 +17,13 @@ const supabase = createClient(
 const {
   buildHelpStepFlex,
   buildHelpCancelFlex,
+  buildHelpConfirmFlex,
   buildHelpExecutiveSummaryFlex,
   sanitizeHelpWizardInput,
   normalizePhoneInput,
-  isValidPhoneInput
+  isValidPhoneInput,
+  validateHelpWizardField,
+  isWizardControlCommand
 } = require("./help-flex-wizard");
 // =========================
 // GENERATE CASE CODE (PRO MAX SAFE)
@@ -123,7 +126,7 @@ async function saveHelpRequestFromState(userId, payload = {}) {
   const full_name = String(payload.full_name || "").trim();
   const location = String(payload.location || "").trim();
   const problem = String(payload.problem || "").trim();
-  const phone = normalizePhoneInput(String(payload.phone || "").trim());
+  const phone = String(payload.phone || "").trim();
 console.log("🔥 SAVE DEBUG:", {
   userId,
   payload,
@@ -137,12 +140,6 @@ console.log("🔥 SAVE DEBUG:", {
   if (!location) missing.push("พื้นที่");
   if (!problem) missing.push("รายละเอียด");
   if (!phone) missing.push("เบอร์");
-
-  if (phone && !isValidPhoneInput(phone)) {
-    const error = new Error("INVALID_PHONE_FORMAT");
-    error.code = "INVALID_PHONE_FORMAT";
-    throw error;
-  }
 
   if (missing.length > 0) {
     const error = new Error("INCOMPLETE_HELP_FORM");
@@ -3413,12 +3410,6 @@ async function saveHelpRequest(userId, text) {
   if (!problem) missing.push("รายละเอียด");
   if (!phone) missing.push("เบอร์");
 
-  if (phone && !isValidPhoneInput(phone)) {
-    const error = new Error("INVALID_PHONE_FORMAT");
-    error.code = "INVALID_PHONE_FORMAT";
-    throw error;
-  }
-
   if (missing.length > 0) {
     const error = new Error("INCOMPLETE_HELP_FORM");
     error.code = "INCOMPLETE_HELP_FORM";
@@ -4803,7 +4794,543 @@ if (text === "อัปเดตเคส") {
   continue;
 }
 
-const caseUpdateState = getCaseUpdateState(userId);
+var caseUpdateState = getCaseUpdateState(userId);
+
+if (caseUpdateState?.step === "await_case_code") {
+  const foundCase = await findLatestCaseByCaseCodeOrPhone(text);
+
+  if (!foundCase) {
+    await safeReply(replyToken, [
+      { type: "text", text: "ไม่พบเลขเคสนี้ในระบบ\nกรุณาส่งเลขเคสใหม่อีกครั้ง" }
+    ]);
+    continue;
+  }
+
+  caseUpdateState.caseCode = foundCase.case_code;
+  caseUpdateState.step = "await_update_stage";
+  setCaseUpdateState(userId, caseUpdateState);
+
+  await safeReply(replyToken, [
+    {
+      type: "text",
+      text:
+        `พบเคส: ${foundCase.case_code}\n` +
+        `ชื่อ: ${foundCase.full_name || "-"}\n\n` +
+        "กรุณาเลือกสถานะอัปเดตจากปุ่มด้านล่าง หรือพิมพ์เองก็ได้",
+    quickReply: buildCaseUpdateStageQuickReply()
+    }
+  ]);
+  continue;
+}
+
+if (caseUpdateState?.step === "await_update_stage") {
+  if (!CASE_UPDATE_STAGES.includes(text)) {
+   await safeReply(replyToken, [
+  {
+    type: "text",
+    text:
+      "สถานะไม่ถูกต้อง\nกรุณาเลือกจากปุ่มด้านล่าง หรือพิมพ์ตามรายการนี้:\n- " +
+      CASE_UPDATE_STAGES.join("\n- "),
+    quickReply: buildCaseUpdateStageQuickReply()
+  }
+]);
+continue;
+  }
+
+  caseUpdateState.updateStage = text;
+  caseUpdateState.step = "await_detail";
+  setCaseUpdateState(userId, caseUpdateState);
+
+  await safeReply(replyToken, [
+    {
+      type: "text",
+      text:
+        `สถานะที่เลือก: ${text}\n` +
+        "กรุณาพิมพ์รายละเอียดการอัปเดต"
+    }
+  ]);
+  continue;
+}
+
+if (caseUpdateState?.step === "await_detail") {
+  const detail = String(text || "").trim();
+
+  if (!detail) {
+    await safeReply(replyToken, [
+      { type: "text", text: "กรุณาพิมพ์รายละเอียดการอัปเดต" }
+    ]);
+    continue;
+  }
+
+  try {
+    const saved = await upsertCaseUpdateLegacy({
+      caseCode: caseUpdateState.caseCode,
+      updateStage: caseUpdateState.updateStage,
+      detail,
+      updatedBy: userId
+    });
+
+    clearCaseUpdateState(userId);
+
+    await safeReply(replyToken, [
+      {
+        type: "text",
+        text:
+          "บันทึกอัปเดตเคสสำเร็จ\n" +
+          `เลขเคส: ${saved.case_code}\n` +
+          `สถานะ: ${saved.current_step}\n` +
+          `ความคืบหน้า: ${saved.progress_percent}%`
+      }
+    ]);
+  } catch (error) {
+    console.error("UPSERT CASE UPDATE ERROR:", error);
+    await safeReply(replyToken, [
+      { type: "text", text: "เกิดข้อผิดพลาดในการบันทึกอัปเดตเคส" }
+    ]);
+  }
+
+  continue;
+}
+       
+       
+
+if (text === "เมนูแอดมิน" || text === "เปิดเมนูแอดมิน" || text === "รีเฟรชเมนูแอดมิน") {
+  if (!isGroupEvent(event)) {
+    await safeReply(replyToken, [{ type: "text", text: "❌ คำสั่งนี้ใช้ได้เฉพาะในไลน์กลุ่มเท่านั้น" }]);
+    continue;
+  }
+
+  if (TEAM_GROUP_ENABLED && !isAllowedTeamGroup(event)) {
+    await safeReply(replyToken, [{ type: "text", text: "❌ เมนูแอดมินใช้ได้เฉพาะในกลุ่มทีมงานที่ได้รับอนุญาตเท่านั้น" }]);
+    continue;
+  }
+
+  if (!(await isAdmin(userId))) {
+    await safeReply(replyToken, [{ type: "text", text: "❌ เมนูนี้สำหรับผู้ดูแลระบบ" }]);
+    continue;
+  }
+
+  const slaCounts = await getSlaMenuCounts();
+
+  await safeReply(replyToken, [buildAdminMenuFlex(slaCounts)], [
+    {
+      type: "text",
+      text:
+        "เมนูแอดมิน SLA PRO\n\n" +
+        `SLA วิกฤต (${slaCounts.overdue})\n` +
+        `ใกล้หลุด SLA (${slaCounts.near_due})\n` +
+        `เคสเปิดทั้งหมด (${slaCounts.open_cases})\n` +
+        `Smart Alert (${slaCounts.smart_alert})`
+    },
+  ]);
+  continue;
+}
+if (text === "คำสั่งดูสิทธิ์") {
+  await safeReply(replyToken, [{
+    type: "text",
+    text:
+      "คำสั่งดูสิทธิ์ทีมงาน\n\n" +
+      "ใช้รูปแบบ:\n" +
+      "ดูสิทธิ์ USER_ID\n\n" +
+      "ตัวอย่าง:\n" +
+      "ดูสิทธิ์ U1234567890abcdef"
+  }]);
+  continue;
+}
+
+if (text === "คำสั่งเพิ่มทีม") {
+  await safeReply(replyToken, [{
+    type: "text",
+    text:
+      "คำสั่งเพิ่มทีม\n\n" +
+      "ใช้รูปแบบ:\n" +
+      "เพิ่มทีม USER_ID role\n\n" +
+      "role ที่ใช้ได้:\n" +
+      "- admin\n- staff\n- viewer\n\n" +
+      "ตัวอย่าง:\n" +
+      "เพิ่มทีม U1234567890abcdef staff"
+  }]);
+  continue;
+}
+
+if (text === "คำสั่งลบทีม") {
+  await safeReply(replyToken, [{
+    type: "text",
+    text:
+      "คำสั่งลบทีม\n\n" +
+      "ใช้รูปแบบ:\n" +
+      "ลบทีม USER_ID\n\n" +
+      "ตัวอย่าง:\n" +
+      "ลบทีม U1234567890abcdef"
+  }]);
+  continue;
+}
+
+if (text === "Smart Alert" || text === "ดู Smart Alert") {
+  const slaCounts = await getSlaMenuCounts();
+  await safeReply(replyToken, [buildSmartAlertFlex(slaCounts)]);
+  continue;
+}
+ if (text === "ดู SLA วิกฤต") {
+  const slaCounts = await getSlaMenuCounts();
+  await safeReply(replyToken, [{
+    type: "text",
+    text: buildSlaPreviewText("🚨 รายการ SLA วิกฤต", slaCounts.overdue_rows)
+  }]);
+  continue;
+}
+
+if (text === "ดูใกล้หลุด SLA") {
+  const slaCounts = await getSlaMenuCounts();
+  await safeReply(replyToken, [{
+    type: "text",
+    text: buildSlaPreviewText("⚠️ รายการใกล้หลุด SLA", slaCounts.near_due_rows)
+  }]);
+  continue;
+}
+
+if (text === "ดูเคสเปิดทั้งหมด") {
+  const slaCounts = await getSlaMenuCounts();
+  await safeReply(replyToken, [{
+    type: "text",
+    text:
+      "📋 เคสเปิดทั้งหมด\n\n" +
+      `จำนวนเคสเปิด: ${slaCounts.open_cases}\n` +
+      `SLA วิกฤต: ${slaCounts.overdue}\n` +
+      `ใกล้หลุด SLA: ${slaCounts.near_due}\n` +
+      `Smart Alert: ${slaCounts.smart_alert}`
+  }]);
+  continue;
+}     
+if (text === "เมนูทีมงาน" || text === "เปิดเมนูทีมงาน" || text === "รีเฟรชเมนูทีมงาน") {
+  if (!(await isViewer(userId))) {
+    await safeReply(replyToken, [{ type: "text", text: "เฉพาะทีมงานหรือผู้มีสิทธิ์เท่านั้น" }]);
+    continue;
+  }
+
+  const counts = await getTeamMenuCounts();
+  await safeReply(replyToken, [buildTeamMenuFlex(counts)], [
+    {
+      type: "text",
+      text:
+        "เมนูทีมงาน\n\n" +
+        `ดูเคสใหม่ (${counts.new_cases})\n` +
+        `เคสด่วน (${counts.urgent_cases})\n` +
+        `เคสวันนี้ (${counts.today_cases})`,
+    },
+  ]);
+  continue;
+}
+
+
+if (/^ติดตามอีกครั้ง\s+/i.test(text)) {
+  const caseCode = text.replace(/^ติดตามอีกครั้ง\s+/i, "").trim();
+
+  try {
+    const foundCase = await findLatestCaseByCaseCodeOrPhone(caseCode);
+
+    if (!foundCase) {
+      await safeReply(replyToken, [
+        {
+          type: "text",
+          text: "ไม่พบข้อมูลเคสสำหรับแจ้งเตือนทีม กรุณาลองค้นหาเคสใหม่อีกครั้ง",
+        },
+      ]);
+      continue;
+    }
+
+    if (String(foundCase.status).toLowerCase() === "done") {
+      await safeReply(replyToken, [
+        {
+          type: "text",
+          text: "เคสนี้ปิดแล้ว จึงไม่ส่งแจ้งเตือนทีมซ้ำครับ",
+        },
+      ]);
+      continue;
+    }
+
+    const cooldownMs = 10 * 60 * 1000;
+    const trackerKey = String(foundCase.case_code || caseCode);
+    const now = Date.now();
+    const prev = caseFollowupTracker[trackerKey];
+
+    if (prev && now - prev.lastAt < cooldownMs) {
+      await safeReply(replyToken, [
+        {
+          type: "text",
+          text: "เพิ่มรายการแจ้งเตือนเคสนี้ไปไม่นาน กรุณารอสักครู่แล้วลองอีกครั้ง",
+        },
+      ]);
+      continue;
+    }
+
+    const nextCount = (prev?.count || 0) + 1;
+    caseFollowupTracker[trackerKey] = {
+      lastAt: now,
+      count: nextCount,
+    };
+
+    if (EFFECTIVE_TEAM_GROUP_ID) {
+      await pushTeamFollowupNotification(foundCase, nextCount);
+    } else {
+      console.warn("TEAM GROUP ID NOT SET FOR FOLLOWUP");
+    }
+
+    await safeReply(replyToken, [
+      {
+        type: "text",
+        text: "เพิ่มการแจ้งเตือนเคสนี้ไปที่ทีมงานแล้ว กรุณารอสักครู่แล้วลองอีกครั้ง",
+      },
+    ]);
+  } catch (err) {
+    console.error("FOLLOWUP NOTIFY ERROR:", err);
+    await safeReply(replyToken, [
+      {
+        type: "text",
+        text: "แจ้งเตือนทีมงานไม่สำเร็จ กรุณาลองใหม่อีกครั้ง",
+      },
+    ]);
+  }
+
+  continue;
+}
+
+if (text === "ขอความช่วยเหลือ") {
+  clearHelpRequestState(userId);
+  await safeReply(replyToken, [buildHelpRequestChoiceFlex()]);
+  continue;
+}
+
+var helpState = getHelpRequestState(userId);
+
+if (text === "ขอความช่วยเหลือครั้งแรก") {
+  setHelpRequestState(userId, {
+    step: "name",
+    data: {}
+  });
+
+  await safeReply(replyToken, [
+    buildHelpStepFlex("name", {})
+  ]);
+  continue;
+}
+
+if (isTemplateOnlyHelpForm(text)) {
+  setHelpRequestState(userId, {
+    step: "name",
+    data: {}
+  });
+
+  await safeReply(replyToken, [
+    buildHelpStepFlex("name", {})
+  ]);
+  continue;
+}
+
+if (helpState) {
+  if (text === "ยกเลิก" || text === "ยกเลิกฟอร์ม") {
+    clearHelpRequestState(userId);
+    await safeReply(replyToken, [buildHelpCancelFlex()]);
+    continue;
+  }
+
+  if (helpState.step === "confirm") {
+    if (text === "แก้ไขข้อมูล") {
+      setHelpRequestState(userId, {
+        step: "name",
+        data: helpState.data || {}
+      });
+
+      await safeReply(replyToken, [
+        buildHelpStepFlex("name", helpState.data || {})
+      ]);
+      continue;
+    }
+
+    if (text === "ส่งข้อมูล" || text === "ส่งข้อมูล / SENT") {
+      try {
+        const insertedCase = await saveHelpRequestFromState(userId, helpState.data || {});
+        clearHelpRequestState(userId);
+
+        await safeReply(replyToken, [
+          buildUserCaseReceivedFlex(insertedCase)
+        ]);
+
+        try {
+          await pushTeamNewCaseNotification(insertedCase);
+
+          await supabase
+            .from("help_requests")
+            .update({
+              notify_status: "sent",
+              notified_at: new Date().toISOString()
+            })
+            .eq("id", insertedCase.id);
+        } catch (notifyError) {
+          console.error("TEAM NOTIFICATION FAILED:", notifyError.message);
+
+          await supabase
+            .from("help_requests")
+            .update({
+              notify_status: "failed"
+            })
+            .eq("id", insertedCase.id);
+        }
+      } catch (err) {
+        console.error("STEP FLOW SAVE HELP REQUEST FAILED:", err);
+        if (err?.code === "INVALID_PHONE_FORMAT") {
+          setHelpRequestState(userId, {
+            step: "phone",
+            data: helpState.data || {}
+          });
+          await safeReply(replyToken, [
+            buildHelpStepFlex("phone", helpState.data || {}, {
+              errorText: "กรุณากรอกเบอร์โทรให้ถูกต้อง เช่น 0812345678"
+            })
+          ]);
+        } else {
+          await safeReply(replyToken, [
+            buildHelpConfirmFlex(helpState.data || {}, {
+              errorText: "บันทึกข้อมูลไม่สำเร็จครับ กรุณาตรวจสอบข้อมูลอีกครั้งแล้วส่งใหม่"
+            })
+          ]);
+        }
+      }
+      continue;
+    }
+
+    await safeReply(replyToken, [
+      buildHelpConfirmFlex(helpState.data || {}, {
+        errorText: "กรุณากดปุ่ม 'แก้ไขข้อมูล' หรือ 'ส่งข้อมูล' เพื่อดำเนินการต่อ"
+      })
+    ]);
+    continue;
+  }
+
+  const sanitizedValue = sanitizeHelpWizardInput(text);
+
+  if (!sanitizedValue || isWizardControlCommand(sanitizedValue)) {
+    await safeReply(replyToken, [
+      buildHelpStepFlex(helpState.step, helpState.data || {}, {
+        errorText: "กรุณาพิมพ์ข้อมูลจริงในช่องแชทด้านล่างก่อนดำเนินการต่อ"
+      })
+    ]);
+    continue;
+  }
+
+  const validation = validateHelpWizardField(helpState.step, sanitizedValue, helpState.data || {});
+  if (!validation.ok) {
+    await safeReply(replyToken, [
+      buildHelpStepFlex(helpState.step, helpState.data || {}, {
+        errorText: validation.message
+      })
+    ]);
+    continue;
+  }
+
+  const normalizedValue = validation.value;
+
+  if (helpState.step === "name") {
+    const nextData = {
+      ...helpState.data,
+      full_name: normalizedValue
+    };
+
+    setHelpRequestState(userId, {
+      step: "location",
+      data: nextData
+    });
+
+    await safeReply(replyToken, [
+      buildHelpStepFlex("location", nextData)
+    ]);
+    continue;
+  }
+
+  if (helpState.step === "location") {
+    const nextData = {
+      ...helpState.data,
+      location: normalizedValue
+    };
+
+    setHelpRequestState(userId, {
+      step: "problem",
+      data: nextData
+    });
+
+    await safeReply(replyToken, [
+      buildHelpStepFlex("problem", nextData)
+    ]);
+    continue;
+  }
+
+  if (helpState.step === "problem") {
+    const nextData = {
+      ...helpState.data,
+      problem: normalizedValue
+    };
+
+    setHelpRequestState(userId, {
+      step: "phone",
+      data: nextData
+    });
+
+    await safeReply(replyToken, [
+      buildHelpStepFlex("phone", nextData)
+    ]);
+    continue;
+  }
+
+  if (helpState.step === "phone") {
+    const nextData = {
+      ...helpState.data,
+      phone: normalizedValue
+    };
+
+    setHelpRequestState(userId, {
+      step: "confirm",
+      data: nextData
+    });
+
+    await safeReply(replyToken, [
+      buildHelpConfirmFlex(nextData)
+    ]);
+    continue;
+  }
+}
+
+if (text === "อัปเดตเคส") {
+  if (!(event.source?.type === "group" && event.source?.groupId === ALLOWED_TEAM_GROUP_ID)) {
+    await safeReply(replyToken, [
+      { type: "text", text: "คำสั่งนี้ใช้ได้เฉพาะในกลุ่มทีมงานเท่านั้น" }
+    ]);
+    continue;
+  }
+
+  if (!(role === "admin" || role === "staff")) {
+    await safeReply(replyToken, [
+      { type: "text", text: "เฉพาะทีมงานที่ได้รับสิทธิ์เท่านั้น" }
+    ]);
+    continue;
+  }
+
+  setCaseUpdateState(userId, {
+    step: "await_case_code",
+    caseCode: "",
+    updateStage: "",
+    detail: ""
+  });
+
+  await safeReply(replyToken, [
+    {
+      type: "text",
+      text: "เริ่มโหมดอัปเดตเคส\nกรุณาส่งเลขเคสที่ต้องการอัปเดต"
+    }
+  ]);
+  continue;
+}
+
+var caseUpdateState = getCaseUpdateState(userId);
 
 if (caseUpdateState?.step === "await_case_code") {
   const foundCase = await findLatestCaseByCaseCodeOrPhone(text);
@@ -5110,7 +5637,7 @@ if (text === "ขอความช่วยเหลือ") {
 }
 
 // ✅ STEP FLOW วางตรงนี้
-const helpState = getHelpRequestState(userId);
+var helpState = getHelpRequestState(userId);
 
 if (text === "ขอความช่วยเหลือครั้งแรก") {
   setHelpRequestState(userId, {
@@ -5119,7 +5646,13 @@ if (text === "ขอความช่วยเหลือครั้งแร
   });
 
   await safeReply(replyToken, [
-    buildHelpStepFlex("name", {})
+    {
+      type: "text",
+      text:
+        "เริ่มกรอกข้อมูลขอความช่วยเหลือครับ\n\n" +
+        "ขอชื่อผู้ขอความช่วยเหลือก่อนครับ\n" +
+        "พิมพ์ 'ยกเลิก' ได้ทุกเมื่อหากต้องการหยุดฟอร์ม"
+    }
   ]);
   continue;
 }
@@ -5131,7 +5664,13 @@ if (isTemplateOnlyHelpForm(text)) {
   });
 
   await safeReply(replyToken, [
-    buildHelpStepFlex("name", {})
+    {
+      type: "text",
+      text:
+        "เริ่มกรอกข้อมูลขอความช่วยเหลือครับ\n\n" +
+        "ขอชื่อผู้ขอความช่วยเหลือก่อนครับ\n" +
+        "พิมพ์ 'ยกเลิก' ได้ทุกเมื่อหากต้องการหยุดฟอร์ม"
+    }
   ]);
   continue;
 }
@@ -5140,18 +5679,19 @@ if (helpState) {
   if (text === "ยกเลิก" || text === "ยกเลิกฟอร์ม") {
     clearHelpRequestState(userId);
     await safeReply(replyToken, [
-      buildHelpCancelFlex()
+      {
+        type: "text",
+        text: "ยกเลิกการกรอกข้อมูลแล้วครับ\nพิมพ์ 'ขอความช่วยเหลือ' เพื่อเริ่มใหม่ได้ทุกเมื่อ"
+      }
     ]);
     continue;
   }
 
   if (helpState.step === "waiting_name") {
-    const value = sanitizeHelpWizardInput(text);
+    const value = text.trim();
     if (!value) {
       await safeReply(replyToken, [
-        buildHelpStepFlex("name", helpState.data || {}, {
-          errorText: "กรุณาพิมพ์ชื่อผู้ขอความช่วยเหลือครับ"
-        })
+        { type: "text", text: "กรุณาพิมพ์ชื่อผู้ขอความช่วยเหลือครับ" }
       ]);
       continue;
     }
@@ -5167,18 +5707,16 @@ if (helpState) {
     });
 
     await safeReply(replyToken, [
-      buildHelpStepFlex("location", nextData)
+      { type: "text", text: buildHelpStepText("location", nextData) }
     ]);
     continue;
   }
 
   if (helpState.step === "waiting_location") {
-    const value = sanitizeHelpWizardInput(text);
+    const value = text.trim();
     if (!value) {
       await safeReply(replyToken, [
-        buildHelpStepFlex("location", helpState.data || {}, {
-          errorText: "กรุณาพิมพ์พื้นที่ / จังหวัด / จุดเกิดเหตุครับ"
-        })
+        { type: "text", text: "กรุณาพิมพ์พื้นที่ / จังหวัด / จุดเกิดเหตุครับ" }
       ]);
       continue;
     }
@@ -5194,18 +5732,16 @@ if (helpState) {
     });
 
     await safeReply(replyToken, [
-      buildHelpStepFlex("problem", nextData)
+      { type: "text", text: buildHelpStepText("problem", nextData) }
     ]);
     continue;
   }
 
   if (helpState.step === "waiting_problem") {
-    const value = sanitizeHelpWizardInput(text);
+    const value = text.trim();
     if (!value) {
       await safeReply(replyToken, [
-        buildHelpStepFlex("problem", helpState.data || {}, {
-          errorText: "กรุณาพิมพ์รายละเอียดปัญหาที่ต้องการความช่วยเหลือครับ"
-        })
+        { type: "text", text: "กรุณาพิมพ์รายละเอียดปัญหาที่ต้องการความช่วยเหลือครับ" }
       ]);
       continue;
     }
@@ -5221,13 +5757,13 @@ if (helpState) {
     });
 
     await safeReply(replyToken, [
-      buildHelpStepFlex("phone", nextData)
+      { type: "text", text: buildHelpStepText("phone", nextData) }
     ]);
     continue;
   }
 
   if (helpState.step === "waiting_phone") {
-    const value = sanitizeHelpWizardInput(text);
+    const value = text.trim();
     console.log("📞 STEP PHONE DEBUG:", {
   userId,
   step: helpState.step,
@@ -5237,26 +5773,14 @@ if (helpState) {
 });
     if (!value) {
       await safeReply(replyToken, [
-        buildHelpStepFlex("phone", helpState.data || {}, {
-          errorText: "กรุณาพิมพ์เบอร์โทรติดต่อกลับครับ"
-        })
-      ]);
-      continue;
-    }
-
-    const normalizedPhone = normalizePhoneInput(value);
-    if (!isValidPhoneInput(normalizedPhone)) {
-      await safeReply(replyToken, [
-        buildHelpStepFlex("phone", helpState.data || {}, {
-          errorText: "รูปแบบเบอร์โทรไม่ถูกต้อง กรุณากรอกเป็นตัวเลข 9-10 หลัก เช่น 0812345678"
-        })
+        { type: "text", text: "กรุณาพิมพ์เบอร์โทรติดต่อกลับครับ" }
       ]);
       continue;
     }
 
     const finalData = {
       ...helpState.data,
-      phone: normalizedPhone
+      phone: value
     };
 console.log("✅ FINAL DATA BEFORE SAVE:", {
   userId,
@@ -5268,7 +5792,16 @@ console.log("✅ FINAL DATA BEFORE SAVE:", {
 
       await safeReply(
         replyToken,
-        [buildUserCaseReceivedFlex(insertedCase)]
+        [buildUserCaseReceivedFlex(insertedCase)],
+        [
+          {
+            type: "text",
+            text:
+              "ทีมงานได้รับข้อมูลแล้วครับ 🙏\n" +
+              `เลขเคสของคุณคือ ${insertedCase.case_code}\n` +
+              "เราจะตรวจสอบและติดต่อกลับโดยเร็วที่สุด"
+          }
+        ]
       );
 
       try {
@@ -5293,14 +5826,6 @@ console.log("✅ FINAL DATA BEFORE SAVE:", {
       }
     } catch (err) {
       console.error("STEP FLOW SAVE HELP REQUEST FAILED:", err);
-      if (err?.code === "INVALID_PHONE_FORMAT") {
-        await safeReply(replyToken, [
-          buildHelpStepFlex("phone", helpState.data || {}, {
-            errorText: "รูปแบบเบอร์โทรไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง"
-          })
-        ]);
-        continue;
-      }
       await safeReply(replyToken, [
         {
           type: "text",
