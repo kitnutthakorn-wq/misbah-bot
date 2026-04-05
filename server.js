@@ -1935,10 +1935,10 @@ function buildHelpFormFlex() {
   const primaryAction = {
     type: "message",
     label: "กรอกข้อมูลตามนี้",
-    text: `ชื่อ:
+    text: "ชื่อ:
 พื้นที่:
 รายละเอียด:
-เบอร์:`
+เบอร์:"
   };
 
   return {
@@ -1979,7 +1979,7 @@ function buildHelpFormFlex() {
           },
           {
             type: "text",
-            text: "กดปุ่มด้านล่างเพื่อเปิดช่องพิมพ์พร้อมหัวข้อฟอร์ม",
+            text: "กดปุ่มด้านล่างเพื่อส่งหัวข้อฟอร์มเข้าแชท แล้วพิมพ์ข้อมูลต่อท้ายได้เลย",
             size: "sm",
             color: "#6B7280",
             wrap: true,
