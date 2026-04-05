@@ -14,7 +14,45 @@ const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
+// =========================
+// GENERATE CASE CODE (PRO MAX SAFE)
+// =========================
+async function generateCaseCode() {
+  try {
+    const now = new Date();
 
+    const datePart =
+      now.getFullYear().toString() +
+      String(now.getMonth() + 1).padStart(2, "0") +
+      String(now.getDate()).padStart(2, "0");
+
+    // ดึงเคสล่าสุด
+    const { data, error } = await supabase
+      .from("help_requests")
+      .select("case_code")
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    let running = 1;
+
+    if (!error && data && data.length > 0) {
+      const lastCode = data[0].case_code || "";
+      const match = lastCode.match(/-(\d{3,})$/);
+      if (match) {
+        running = parseInt(match[1], 10) + 1;
+      }
+    }
+
+    const runningStr = String(running).padStart(3, "0");
+
+    return `CASE-${datePart}-${runningStr}`;
+  } catch (err) {
+    console.error("generateCaseCode ERROR:", err);
+
+    // fallback กันพัง
+    return `TEMP-${Date.now()}`;
+  }
+}
 const userStates = {};
 const helpRequestStates = {};
 
