@@ -165,7 +165,7 @@ console.log("🔥 SAVE DEBUG:", {
   problem,
   status: "new",
   priority,
-  notify_status: "pending"
+  
       }
     ])
     .select()
