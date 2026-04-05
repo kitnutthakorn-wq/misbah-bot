@@ -171,7 +171,7 @@ function progressBar(stepOrder = 1) {
       layout: "vertical",
       flex: 1,
       height: "10px",
-      cornerRadius: "999px",
+      
       backgroundColor: i <= stepOrder ? COLORS.progressOn : COLORS.progressOff,
       contents: []
     });
@@ -201,7 +201,7 @@ function buildBrandHeader(stepKey = "name") {
             aspectRatio: "1:1",
             flex: 0,
             backgroundColor: COLORS.white,
-            cornerRadius: "999px"
+           
           },
           {
             type: "box",
@@ -280,7 +280,7 @@ function buildDataBox(data = {}) {
     backgroundColor: COLORS.white,
     borderColor: COLORS.border,
     borderWidth: "1px",
-    cornerRadius: "16px",
+    
     paddingAll: "16px",
     spacing: "sm",
     contents: [
@@ -308,7 +308,7 @@ function buildErrorBox(errorText = "") {
     type: "box",
     layout: "vertical",
     backgroundColor: COLORS.dangerSoft,
-    cornerRadius: "14px",
+    
     paddingAll: "14px",
     contents: [
       {
@@ -330,7 +330,7 @@ function buildInstructionCard(stepKey = "name") {
     type: "box",
     layout: "vertical",
     backgroundColor: "#ececec",
-    cornerRadius: "18px",
+    
     paddingAll: "22px",
     spacing: "md",
     contents: [
