@@ -5101,9 +5101,17 @@ if (/^ติดตามอีกครั้ง\s+/i.test(text)) {
   continue;
 }
 
-if (text === "ขอความช่วยเหลือ") {
-  clearHelpRequestState(userId);
-  await safeReply(replyToken, [buildHelpRequestChoiceFlex()]);
+if (text === "ขอความช่วยเหลือครั้งแรก") {
+  setHelpRequestState(userId, {
+    step: "name",
+    data: {},
+    returnToConfirm: false,
+    editingField: null
+  });
+
+  await safeReply(replyToken, [
+    buildHelpStepFlex("name", {})
+  ]);
   continue;
 }
 
