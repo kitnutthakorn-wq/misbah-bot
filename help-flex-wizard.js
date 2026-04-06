@@ -29,12 +29,12 @@ const WIZARD_CONTROL_COMMANDS = new Set([
   "กลับสู่เมนูหลัก",
   "ส่งข้อมูล",
   "ส่งข้อมูล / sent",
-  "แก้ไขข้อมูล",
   "sent",
+  "แก้ไขข้อมูล",
   "แก้ชื่อ",
-"แก้ที่อยู่",
-"แก้รายละเอียด",
-"แก้เบอร์",
+  "แก้ที่อยู่",
+  "แก้รายละเอียด",
+  "แก้เบอร์"
 ]);
 
 const STEP_META = {
@@ -89,7 +89,11 @@ function sanitizeHelpWizardInput(value = "") {
 }
 
 function isWizardControlCommand(value = "") {
-  return WIZARD_CONTROL_COMMANDS.has(cleanText(value).toLowerCase());
+  const text = cleanText(value)
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+
+  return WIZARD_CONTROL_COMMANDS.has(text);
 }
 
 function normalizePhoneInput(value = "") {
