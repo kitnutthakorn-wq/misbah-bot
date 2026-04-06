@@ -4636,9 +4636,18 @@ app.post("/webhook", async (req, res) => {
       if (!event.message || event.message.type !== "text") continue;
 
       const replyToken = event.replyToken;
-      const text = event.message.text.trim();
-      const userId = event.source?.userId || "";
-      const role = await getUserRole(userId);
+
+if (event.type !== "message") {
+  continue;
+}
+
+if (!event.message || event.message.type !== "text") {
+  continue;
+}
+
+const text = String(event.message.text || "").trim();
+const userId = event.source?.userId || "";
+const role = await getUserRole(userId);
 
 console.log("EVENT TEXT =", text);
 console.log("USER ID =", userId);
