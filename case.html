@@ -857,13 +857,23 @@ async function loadProjects(){
         document.getElementById("full_name").innerHTML = escapeHtml(data.full_name || "-");
         document.getElementById("phone").innerHTML = escapeHtml(data.phone || "-");
         document.getElementById("location").innerHTML = escapeHtml(data.location || "-");
-        const locationTextEl = document.getElementById("location_text");
+       
+const locationTextEl = document.getElementById("location_text");
 
 if (locationTextEl) {
+  const latest = data.latest_update || {};
+
+  const lat =
+    latest.latitude ?? data.latitude ?? null;
+
+  const lng =
+    latest.longitude ?? data.longitude ?? null;
+
   const locationText =
+    latest.location_text ||
     data.location_text ||
-    (data.latitude && data.longitude
-      ? `${data.latitude}, ${data.longitude}`
+    ((lat !== null && lat !== undefined) && (lng !== null && lng !== undefined)
+      ? `${lat}, ${lng}`
       : "-");
 
   if (data.case_code && locationText !== "-") {
@@ -878,7 +888,7 @@ if (locationTextEl) {
   } else {
     locationTextEl.innerHTML = escapeHtml(locationText);
   }
-}      
+}
         document.getElementById("assigned_to").innerHTML = escapeHtml(data.assigned_to || "-");
         document.getElementById("created_at").innerHTML = escapeHtml(formatThaiDateTime(data.created_at));
         document.getElementById("problem").innerHTML = escapeHtml(data.problem || "-");
