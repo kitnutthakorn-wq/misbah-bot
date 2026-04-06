@@ -461,7 +461,135 @@
   <script>
     const staffPromptDefault = 'ทีมงาน';
     let eventSource = null;
+let commandMap = null;
+let commandMapMarkers = [];
+let commandMapInitialized = false;
 
+function clearCommandMapMarkers() {
+  commandMapMarkers.forEach(marker => {
+    try {
+      commandMap.removeLayer(marker);
+    } catch (_) {}
+  });
+  commandMapMarkers = [];
+}
+
+function getMarkerEmoji(priority = "", status = "") {
+  const p = String(priority || "").toLowerCase();
+  const s = String(status || "").toLowerCase();
+
+  if (p === "urgent") return "🔴";
+  if (s === "done") return "🟢";
+  if (s === "in_progress") return "🟠";
+  return "🔵";
+}
+
+function buildMapPopup(item = {}) {
+  const caseCode = escapeHtml(item.case_code || "-");
+  const name = escapeHtml(item.full_name || "-");
+  const location = escapeHtml(item.location_text || item.location || "-");
+  const problem = escapeHtml(item.problem || "-");
+  const status = escapeHtml(mapStatusThai(item.status || "-"));
+  const priority = escapeHtml(mapPriorityThai(item.priority || "-"));
+  const updatedAt = escapeHtml(formatDateTime(item.updated_at || item.map_order_time || item.last_action_at || item.created_at));
+  const detailUrl = item.id ? `/case?id=${Number(item.id)}` : "#";
+
+  return `
+    <div style="min-width:220px;line-height:1.5">
+      <div style="font-weight:800;color:#163c72;margin-bottom:6px;">${caseCode}</div>
+      <div><strong>ชื่อ:</strong> ${name}</div>
+      <div><strong>พื้นที่:</strong> ${location}</div>
+      <div><strong>สถานะ:</strong> ${status}</div>
+      <div><strong>ระดับ:</strong> ${priority}</div>
+      <div><strong>อัปเดต:</strong> ${updatedAt}</div>
+      <div style="margin-top:8px;">${problem}</div>
+      <div style="margin-top:10px;">
+        <a href="${detailUrl}" style="color:#0b7c86;font-weight:700;text-decoration:none;">เปิดรายละเอียดเคส</a>
+      </div>
+    </div>
+  `;
+}
+
+async function loadCommandMap() {
+  const mapWrap = document.getElementById("commandMap");
+  if (!mapWrap) return;
+
+  const searchText = String(document.getElementById("mapSearchInput")?.value || "").trim().toLowerCase();
+
+  let result;
+  try {
+    result = await apiGet("/api/cases/map");
+  } catch (err) {
+    console.error("LOAD COMMAND MAP ERROR:", err);
+    mapWrap.innerHTML = `<div class="empty">โหลดแผนที่ไม่สำเร็จ</div>`;
+    return;
+  }
+
+  const rows = Array.isArray(result.items)
+    ? result.items
+    : Array.isArray(result.data)
+      ? result.data
+      : Array.isArray(result)
+        ? result
+        : [];
+
+  const filtered = rows.filter(item => {
+    if (!searchText) return true;
+    const haystack = [
+      item.case_code,
+      item.full_name,
+      item.location,
+      item.location_text,
+      item.problem
+    ].join(" ").toLowerCase();
+    return haystack.includes(searchText);
+  });
+
+  if (!commandMapInitialized) {
+    commandMap = L.map("commandMap").setView([13.7563, 100.5018], 6);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "&copy; OpenStreetMap"
+    }).addTo(commandMap);
+
+    commandMapInitialized = true;
+  }
+
+  clearCommandMapMarkers();
+
+  if (!filtered.length) {
+    mapWrap.querySelector(".leaflet-pane") || (mapWrap.innerHTML = `<div class="empty">ไม่พบเคสที่มีพิกัดตามเงื่อนไข</div>`);
+    return;
+  }
+
+  const bounds = [];
+
+  filtered.forEach(item => {
+    const lat = Number(item.latitude);
+    const lng = Number(item.longitude);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat === 0 || lng === 0) return;
+
+    const icon = L.divIcon({
+      className: "custom-map-marker",
+      html: `<div style="font-size:22px;line-height:1;">${getMarkerEmoji(item.priority, item.status)}</div>`,
+      iconSize: [24, 24],
+      iconAnchor: [12, 24],
+      popupAnchor: [0, -22]
+    });
+
+    const marker = L.marker([lat, lng], { icon }).addTo(commandMap);
+    marker.bindPopup(buildMapPopup(item));
+    commandMapMarkers.push(marker);
+    bounds.push([lat, lng]);
+  });
+
+  if (bounds.length === 1) {
+    commandMap.setView(bounds[0], 15);
+  } else if (bounds.length > 1) {
+    commandMap.fitBounds(bounds, { padding: [30, 30] });
+  }
+}
     function escapeHtml(v = '') {
       return String(v)
         .replace(/&/g, '&amp;')
