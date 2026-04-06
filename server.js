@@ -2595,9 +2595,26 @@ app.get("/api/cases/map", async (req, res) => {
 
     const { data, error } = await supabase
       .from("help_requests")
-      .select("*")
+      .select(`
+        id,
+        case_code,
+        full_name,
+        phone,
+        location,
+        problem,
+        assigned_to,
+        status,
+        priority,
+        latitude,
+        longitude,
+        location_text,
+        latest_note,
+        last_action_at,
+        created_at
+      `)
       .not("latitude", "is", null)
       .not("longitude", "is", null)
+      .order("last_action_at", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -2608,9 +2625,14 @@ app.get("/api/cases/map", async (req, res) => {
       });
     }
 
-    return res.json({
-      ok: true,
-      items: (data || []).map((row) => ({
+    const items = (data || [])
+      .filter((row) =>
+        Number.isFinite(Number(row.latitude)) &&
+        Number.isFinite(Number(row.longitude)) &&
+        Number(row.latitude) !== 0 &&
+        Number(row.longitude) !== 0
+      )
+      .map((row) => ({
         id: row.id || null,
         case_code: row.case_code || "",
         full_name: row.full_name || "-",
@@ -2618,16 +2640,21 @@ app.get("/api/cases/map", async (req, res) => {
         location: row.location || "",
         problem: row.problem || "",
         assigned_to: row.assigned_to || "",
-        status: row.status || "new",
+        status: row.status === "progress" ? "in_progress" : (row.status || "new"),
         priority: row.priority || "normal",
-        latitude: row.latitude,
-        longitude: row.longitude,
+        latitude: Number(row.latitude),
+        longitude: Number(row.longitude),
         location_text: row.location_text || "",
         latest_note: row.latest_note || "",
-        updated_at: row.last_action_at || row.created_at || null
+        updated_at: row.last_action_at || row.created_at || null,
+        map_order_time: row.last_action_at || row.created_at || null
       }))
-    });
+      .sort((a, b) => new Date(b.map_order_time || 0) - new Date(a.map_order_time || 0));
 
+    return res.json({
+      ok: true,
+      items
+    });
   } catch (err) {
     console.error("GET /api/cases/map FAILED:", err);
     return res.status(500).json({
