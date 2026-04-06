@@ -2694,7 +2694,13 @@ app.get("/api/team/case-detail", async (req, res) => {
 // =========================
 // 🔥 CASE UPDATE (REAL FLOW)
 // =========================
-app.post("/api/case-updates", upload.array("images", 5), async (req, res) => {
+app.post(
+  "/api/case-updates",
+  upload.fields([
+    { name: "images", maxCount: 5 },
+    { name: "updateImages", maxCount: 5 }
+  ]),
+  async (req, res) => {
   try {
     const body = req.body || {};
     const case_code = cleanText(body.case_code || body.caseCode);
