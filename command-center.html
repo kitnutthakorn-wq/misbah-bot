@@ -466,6 +466,14 @@
 let commandMap = null;
 let commandMapMarkers = [];
 let commandMapInitialized = false;
+let liveRefreshTimer = null;
+
+function scheduleLiveRefresh(delay = 500) {
+  if (liveRefreshTimer) clearTimeout(liveRefreshTimer);
+  liveRefreshTimer = setTimeout(() => {
+    refreshAll().catch(err => console.error('LIVE REFRESH ERROR:', err));
+  }, delay);
+}    
 
 function clearCommandMapMarkers() {
   commandMapMarkers.forEach(marker => {
