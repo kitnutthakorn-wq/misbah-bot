@@ -468,7 +468,46 @@ button:active{transform:translateY(0)}
        
         </div> 
       </div>
+// =========================
+// API: CASES MAP (GPS FEED)
+// =========================
+app.get("/api/cases/map", async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("help_requests")
+      .select(`
+        case_code,
+        full_name,
+        phone,
+        problem,
+        status,
+        priority,
+        latitude,
+        longitude,
+        location_text,
+        last_action_at,
+        created_at
+      `)
+      .not("latitude", "is", null)
+      .not("longitude", "is", null);
 
+    if (error) throw error;
+
+    const rows = (data || [])
+      .filter(r => r.latitude && r.longitude)
+      .map(r => ({
+        ...r,
+        status: (r.status === "progress") ? "in_progress" : r.status,
+        map_order_time: r.last_action_at || r.created_at
+      }))
+      .sort((a, b) => new Date(b.map_order_time) - new Date(a.map_order_time));
+
+    res.json(rows);
+  } catch (err) {
+    console.error("❌ /api/cases/map error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
 <div class="card panel-card field-progress-wrapper">
   <div class="panel-header">
     <h2 class="panel-title">ความคืบหน้าภาคสนาม</h2>
