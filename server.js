@@ -1547,24 +1547,6 @@ function buildTeamNewCaseText(item = {}) {
 }
 
 async function pushTeamNewCaseNotification(item = {}) {
-if (!EFFECTIVE_TEAM_GROUP_ID) {
-  console.error("❌ NO GROUP ID → STOP PUSH");
-  return;
-}
-  
-  console.log("📣 ENTER pushTeamNewCaseNotification:", {
-    case_code: item?.case_code,
-    groupId: EFFECTIVE_TEAM_GROUP_ID
-  });
-
-  console.log("📣 PUSH PAYLOAD PRECHECK:", {
-    hasCaseCode: !!item?.case_code,
-    hasFullName: !!item?.full_name,
-    hasPhone: !!item?.phone
-  });
-
-  // (โค้ดเดิมต่อจากนี้ ห้ามแก้)
-  
 
   // ✅ เติม SLA เข้า item
   const sla = computeSlaState(item);
@@ -5223,6 +5205,27 @@ if (helpState) {
         await safeReply(replyToken, [
           buildHelpExecutiveSummaryFlex(insertedCase)
         ]);
+
+        try {
+          await pushTeamNewCaseNotification(insertedCase);
+
+          await supabase
+            .from("help_requests")
+            .update({
+              notify_status: "sent",
+              notified_at: new Date().toISOString(),
+            })
+            .eq("id", insertedCase.id);
+        } catch (notifyError) {
+          console.error("TEAM NOTIFICATION FAILED:", notifyError.message);
+
+          await supabase
+            .from("help_requests")
+            .update({
+              notify_status: "failed"
+            })
+            .eq("id", insertedCase.id);
+        }
       } catch (err) {
         console.error("STEP FLOW SAVE HELP REQUEST FAILED:", err);
 
@@ -5767,17 +5770,8 @@ if (text === "เคสวันนี้") {
           );
 
 try {
-
-  console.log("📣 BEFORE PUSH TEAM:", {
-    case_code: insertedCase?.case_code,
-    EFFECTIVE_TEAM_GROUP_ID,
-    TEAM_GROUP_ID,
-    LINE_GROUP_ID
-  });
-
-  console.log("📣 NOTIFY STATUS BEFORE:", insertedCase?.notify_status || "no_notify_status");
-
   await pushTeamNewCaseNotification(insertedCase);
+
             await supabase
               .from("help_requests")
               .update({
