@@ -395,8 +395,8 @@ function buildHelpStepFlex(stepKey = "name", data = {}, options = {}) {
   const dataBox = buildDataBox(data);
   if (dataBox) contents.push(dataBox);
 
-  contents.push(
-   {
+ contents.push(
+ {
   type: "text",
   text: "กรุณาพิมพ์ข้อมูลในช่องแชทด้านล่างก่อนดำเนินการต่อ",
   size: "sm",
@@ -404,20 +404,19 @@ function buildHelpStepFlex(stepKey = "name", data = {}, options = {}) {
   weight: "bold",
   wrap: true,
   align: "center"
-}
-    {
-      type: "button",
-      style: "primary",
-      color: COLORS.danger,
-      height: "md",
-      action: {
-        type: "message",
-        label: "ยกเลิก",
-        text: "ยกเลิก"
-      }
-    }
-  );
-
+ },
+ {
+  type: "button",
+  style: "primary",
+  color: COLORS.danger,
+  height: "md",
+  action: {
+    type: "message",
+    label: "ยกเลิก",
+    text: "ยกเลิก"
+  }
+ }
+);
   return {
     type: "flex",
     altText: `แบบฟอร์มขอความช่วยเหลือ ขั้นตอน ${STEP_META[stepKey]?.order || 1}/5`,
