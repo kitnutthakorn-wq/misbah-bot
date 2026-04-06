@@ -30,7 +30,11 @@ const WIZARD_CONTROL_COMMANDS = new Set([
   "ส่งข้อมูล",
   "ส่งข้อมูล / sent",
   "แก้ไขข้อมูล",
-  "sent"
+  "sent",
+  "แก้ชื่อ",
+  "แก้ที่อยู่",
+  "แก้รายละเอียด",
+  "แก้เบอร์"
 ]);
 
 const STEP_META = {
@@ -64,6 +68,13 @@ const STEP_META = {
     example: "หากข้อมูลถูกต้องให้กดส่งข้อมูล",
     helper: "ตรวจสอบข้อมูลก่อนส่งเข้าสู่ระบบ"
   }
+};
+
+const EDIT_FIELD_COMMANDS = {
+  "แก้ชื่อ": "name",
+  "แก้ที่อยู่": "location",
+  "แก้รายละเอียด": "problem",
+  "แก้เบอร์": "phone"
 };
 
 function cleanText(value) {
@@ -170,7 +181,7 @@ function progressBar(stepOrder = 1) {
       type: "box",
       layout: "vertical",
       flex: 1,
-      height: "10px",
+      height: "8px",
       
       backgroundColor: i <= stepOrder ? COLORS.progressOn : COLORS.progressOff,
       contents: []
@@ -185,8 +196,8 @@ function buildBrandHeader(stepKey = "name") {
     type: "box",
     layout: "vertical",
     backgroundColor: COLORS.brand,
-    paddingAll: "18px",
-    spacing: "md",
+    paddingAll: "14px",
+    spacing: "sm",
     contents: [
       {
         type: "box",
@@ -281,8 +292,8 @@ function buildDataBox(data = {}) {
     borderColor: COLORS.border,
     borderWidth: "1px",
     
-    paddingAll: "16px",
-    spacing: "sm",
+    paddingAll: "12px",
+    spacing: "xs",
     contents: [
       {
         type: "text",
@@ -309,7 +320,7 @@ function buildErrorBox(errorText = "") {
     layout: "vertical",
     backgroundColor: COLORS.dangerSoft,
     
-    paddingAll: "14px",
+    paddingAll: "10px",
     contents: [
       {
         type: "text",
@@ -331,13 +342,13 @@ function buildInstructionCard(stepKey = "name") {
     layout: "vertical",
     backgroundColor: "#ececec",
     
-    paddingAll: "22px",
-    spacing: "md",
+    paddingAll: "16px",
+    spacing: "sm",
     contents: [
       {
         type: "text",
         text: meta.title,
-        size: "xxl",
+        size: "xl",
         weight: "bold",
         color: "#000000",
         wrap: true,
@@ -346,7 +357,7 @@ function buildInstructionCard(stepKey = "name") {
       {
         type: "text",
         text: "ในช่องแชทข้อความด้านล่าง",
-        size: "xl",
+        size: "lg",
         weight: "bold",
         color: "#000000",
         wrap: true,
@@ -386,15 +397,13 @@ function buildHelpStepFlex(stepKey = "name", data = {}, options = {}) {
 
   contents.push(
     {
-      type: "button",
-      style: "primary",
-      color: COLORS.brand,
-      height: "md",
-      action: {
-        type: "message",
-        label: "พิมพ์ข้อมูลในช่องแชท",
-        text: "พิมพ์ข้อมูลในช่องแชท"
-      }
+      type: "text",
+      text: "กรุณาพิมพ์ข้อมูลในช่องแชทด้านล่างก่อนดำเนินการต่อ",
+      size: "sm",
+      color: COLORS.danger,
+      weight: "bold",
+      wrap: true,
+      align: "center"
     },
     {
       type: "button",
@@ -474,14 +483,52 @@ function buildHelpConfirmFlex(data = {}, options = {}) {
       ]
     },
     {
+      type: "box",
+      layout: "horizontal",
+      spacing: "sm",
+      contents: [
+        {
+          type: "button",
+          style: "secondary",
+          flex: 1,
+          action: { type: "message", label: "แก้ชื่อ", text: "แก้ชื่อ" }
+        },
+        {
+          type: "button",
+          style: "secondary",
+          flex: 1,
+          action: { type: "message", label: "แก้ที่อยู่", text: "แก้ที่อยู่" }
+        }
+      ]
+    },
+    {
+      type: "box",
+      layout: "horizontal",
+      spacing: "sm",
+      contents: [
+        {
+          type: "button",
+          style: "secondary",
+          flex: 1,
+          action: { type: "message", label: "แก้รายละเอียด", text: "แก้รายละเอียด" }
+        },
+        {
+          type: "button",
+          style: "secondary",
+          flex: 1,
+          action: { type: "message", label: "แก้เบอร์", text: "แก้เบอร์" }
+        }
+      ]
+    },
+    {
       type: "button",
       style: "primary",
       color: COLORS.brand,
       height: "md",
       action: {
         type: "message",
-        label: "แก้ไขข้อมูล",
-        text: "แก้ไขข้อมูล"
+        label: "ส่งข้อมูล / SENT",
+        text: "ส่งข้อมูล / SENT"
       }
     },
     {
@@ -491,8 +538,8 @@ function buildHelpConfirmFlex(data = {}, options = {}) {
       height: "md",
       action: {
         type: "message",
-        label: "ส่งข้อมูล / SENT",
-        text: "ส่งข้อมูล / SENT"
+        label: "ยกเลิก",
+        text: "ยกเลิก"
       }
     }
   );
