@@ -1,6 +1,6 @@
 const DEFAULT_LOGO_URL =
   process.env.MISBAHUL_AITAM_LOGO_URL ||
-  "https://img1.pic.in.th/images/Logo223376766a03d608d.png";
+  "https://img2.pic.in.th/Logo21.png";
 
 const COLORS = {
   brand: "#0b7c86",
