@@ -6495,8 +6495,7 @@ const payload = {
   assigned_to: actorName,
   status: "in_progress",
   assigned_at: new Date().toISOString(),
-  last_action_at: new Date().toISOString(),
-  last_action_by: actorName
+  last_action_at: new Date().toISOString()
 };
 
     const result = await supabase
