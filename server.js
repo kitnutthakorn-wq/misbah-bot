@@ -5655,12 +5655,17 @@ var helpState = getHelpRequestState(userId);
 
 if (text === "ขอความช่วยเหลือครั้งแรก") {
   setHelpRequestState(userId, {
-    step: "waiting_name",
-    data: {}
+    step: "name",
+    data: {},
+    returnToConfirm: false,
+    editingField: null
   });
 
   await safeReply(replyToken, [
-    {
+    buildHelpStepFlex("name", {})
+  ]);
+  continue;
+}
       type: "text",
       text:
         "เริ่มกรอกข้อมูลขอความช่วยเหลือครับ\n\n" +
