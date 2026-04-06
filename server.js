@@ -2710,7 +2710,11 @@ app.post(
       }
 
       const helpRequest = await getHelpRequestByCaseCode(case_code);
-      const case_id = body.case_id || body.caseId || helpRequest?.id || null;
+const case_id = body.case_id || body.caseId || helpRequest?.id || null;
+
+if (!case_id) {
+  return res.status(400).json({ ok: false, error: "case_id not found" });
+}
 
       const rawStatus = cleanText(body.status || body.status_after || body.rawStatusAfter || body.progressStatus);
       const status_after = rawStatus || null;
