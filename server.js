@@ -6376,7 +6376,7 @@ function mapCaseRowToTeamCase(row = {}) {
     is_urgent: priority === "urgent",
 
     province: locationValue,
-    owner: row.assigned_to || row.last_action_by || "-",
+    owner: row.assigned_to || "-",
     updated_at: row.updated_at || row.last_action_at || row.created_at || null,
     category:
       row.business_label ||
@@ -6456,14 +6456,14 @@ app.get("/api/team/activities", async (req, res) => {
     const limit = Math.min(parseInt(req.query.limit || "10", 10), 30);
     const result = await supabase
       .from("help_requests")
-      .select("case_code, full_name, status, assigned_to, last_action_by, created_at")
+     .select("case_code, full_name, status, assigned_to, created_at")
       .order("created_at", { ascending: false })
       .limit(limit);
 
     if (result.error) throw result.error;
 
     const activities = (result.data || []).map((row) => {
-      const actor = row.assigned_to || row.last_action_by || "-";
+      const actor = row.assigned_to || "-";
 
       return {
         title: `อัปเดตเคส ${row.case_code || "-"}`,
