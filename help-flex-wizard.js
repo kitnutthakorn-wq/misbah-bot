@@ -519,18 +519,18 @@ function buildHelpConfirmFlex(data = {}, options = {}) {
     }
   ]
 },
-    {
-      type: "button",
-      style: "primary",
-      color: COLORS.danger,
-      height: "md",
-      action: {
-        type: "message",
-        label: "ส่งข้อมูล / SENT",
-        text: "ส่งข้อมูล / SENT"
-      }
-    }
-    {
+   {
+  type: "button",
+  style: "primary",
+  color: COLORS.danger,
+  height: "md",
+  action: {
+    type: "message",
+    label: "ส่งข้อมูล / SENT",
+    text: "ส่งข้อมูล / SENT"
+  }
+},
+{
   type: "button",
   style: "primary",
   color: COLORS.danger,
@@ -754,6 +754,6 @@ module.exports = {
   normalizePhoneInput,
   isValidPhoneInput,
   validateHelpWizardField,
-  isWizardControlCommand
+  isWizardControlCommand,
   EDIT_FIELD_COMMANDS
 };
