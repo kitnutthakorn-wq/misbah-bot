@@ -497,7 +497,7 @@ function filterRowsBySla(rows){
         if("Notification" in window){
           if(Notification.permission === "default"){ Notification.requestPermission().catch(()=>{}); }
           if(Notification.permission === "granted"){
-            new Notification("มูลนิธิคนช่วยฅน", { body:`มีเคสใหม่เข้าระบบ ${diff} เคส`, icon:"/logo.png" });
+            new Notification("มูลนิธิตะเกียงเด็กกำพร้า", { body:`มีเคสใหม่เข้าระบบ ${diff} เคส`, icon:"/logo.png" });
           }
         }
       }
