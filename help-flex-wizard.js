@@ -292,8 +292,8 @@ function buildDataBox(data = {}) {
     borderColor: COLORS.border,
     borderWidth: "1px",
     
-    paddingAll: "16px",
-    spacing: "sm",
+    paddingAll: "12px",
+    spacing: "xs",
     contents: [
       {
         type: "text",
