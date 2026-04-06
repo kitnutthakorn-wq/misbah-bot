@@ -5653,22 +5653,17 @@ if (text === "ขอความช่วยเหลือครั้งแร
 }
 if (isTemplateOnlyHelpForm(text)) {
   setHelpRequestState(userId, {
-    step: "waiting_name",
-    data: {}
+    step: "name",
+    data: {},
+    returnToConfirm: false,
+    editingField: null
   });
 
   await safeReply(replyToken, [
-    {
-      type: "text",
-      text:
-        "เริ่มกรอกข้อมูลขอความช่วยเหลือครับ\n\n" +
-        "ขอชื่อผู้ขอความช่วยเหลือก่อนครับ\n" +
-        "พิมพ์ 'ยกเลิก' ได้ทุกเมื่อหากต้องการหยุดฟอร์ม"
-    }
+    buildHelpStepFlex("name", {})
   ]);
   continue;
 }
-
 if (helpState) {
   if (text === "ยกเลิก" || text === "ยกเลิกฟอร์ม") {
     clearHelpRequestState(userId);
