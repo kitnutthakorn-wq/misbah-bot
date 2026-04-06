@@ -5664,6 +5664,7 @@ if (isTemplateOnlyHelpForm(text)) {
   ]);
   continue;
 }
+  
 if (helpState) {
   if (text === "ยกเลิก" || text === "ยกเลิกฟอร์ม") {
     clearHelpRequestState(userId);
