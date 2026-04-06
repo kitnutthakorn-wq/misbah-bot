@@ -196,8 +196,8 @@ function buildBrandHeader(stepKey = "name") {
     type: "box",
     layout: "vertical",
     backgroundColor: COLORS.brand,
-    paddingAll: "18px",
-    spacing: "md",
+    paddingAll: "14px",
+    spacing: "sm",
     contents: [
       {
         type: "box",
