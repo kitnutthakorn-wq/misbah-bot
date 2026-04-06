@@ -181,7 +181,7 @@ function progressBar(stepOrder = 1) {
       type: "box",
       layout: "vertical",
       flex: 1,
-      height: "10px",
+      height: "8px",
       
       backgroundColor: i <= stepOrder ? COLORS.progressOn : COLORS.progressOff,
       contents: []
