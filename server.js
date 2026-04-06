@@ -14,6 +14,18 @@ const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
+const {
+  buildHelpStepFlex,
+  buildHelpCancelFlex,
+  buildHelpConfirmFlex,
+  buildHelpExecutiveSummaryFlex,
+  sanitizeHelpWizardInput,
+  normalizePhoneInput,
+  isValidPhoneInput,
+  validateHelpWizardField,
+  isWizardControlCommand,
+  EDIT_FIELD_COMMANDS
+} = require("./help-flex-wizard");
 // =========================
 // GENERATE CASE CODE (PRO MAX SAFE)
 // =========================
@@ -62,7 +74,12 @@ function getHelpRequestState(userId) {
 
 function setHelpRequestState(userId, payload) {
   if (!userId) return;
-  helpRequestStates[userId] = payload;
+  helpRequestStates[userId] = {
+    step: payload?.step || "name",
+    data: payload?.data || {},
+    returnToConfirm: Boolean(payload?.returnToConfirm),
+    editingField: payload?.editingField || null
+  };
 }
 
 function clearHelpRequestState(userId) {
@@ -115,7 +132,12 @@ async function saveHelpRequestFromState(userId, payload = {}) {
   const full_name = String(payload.full_name || "").trim();
   const location = String(payload.location || "").trim();
   const problem = String(payload.problem || "").trim();
-  const phone = String(payload.phone || "").trim();
+  const phone = normalizePhoneInput(String(payload.phone || "").trim());
+  if (phone && !isValidPhoneInput(phone)) {
+    const error = new Error("INVALID_PHONE_FORMAT");
+    error.code = "INVALID_PHONE_FORMAT";
+    throw error;
+  }
 console.log("🔥 SAVE DEBUG:", {
   userId,
   payload,
@@ -5247,287 +5269,60 @@ if (helpState) {
   const normalizedValue = validation.value;
 
   if (helpState.step === "name") {
-    const nextData = {
-      ...helpState.data,
-      full_name: normalizedValue
-    };
-
+    const nextData = { ...helpState.data, full_name: normalizedValue };
     setHelpRequestState(userId, {
       step: helpState.returnToConfirm ? "confirm" : "location",
       data: nextData,
       returnToConfirm: false,
       editingField: null
     });
-
     await safeReply(replyToken, [
-      helpState.returnToConfirm
-        ? buildHelpConfirmFlex(nextData)
-        : buildHelpStepFlex("location", nextData)
+      helpState.returnToConfirm ? buildHelpConfirmFlex(nextData) : buildHelpStepFlex("location", nextData)
     ]);
     continue;
   }
 
   if (helpState.step === "location") {
-    const nextData = {
-      ...helpState.data,
-      location: normalizedValue
-    };
-
+    const nextData = { ...helpState.data, location: normalizedValue };
     setHelpRequestState(userId, {
       step: helpState.returnToConfirm ? "confirm" : "problem",
       data: nextData,
       returnToConfirm: false,
       editingField: null
     });
-
     await safeReply(replyToken, [
-      helpState.returnToConfirm
-        ? buildHelpConfirmFlex(nextData)
-        : buildHelpStepFlex("problem", nextData)
+      helpState.returnToConfirm ? buildHelpConfirmFlex(nextData) : buildHelpStepFlex("problem", nextData)
     ]);
     continue;
   }
 
   if (helpState.step === "problem") {
-    const nextData = {
-      ...helpState.data,
-      problem: normalizedValue
-    };
-
+    const nextData = { ...helpState.data, problem: normalizedValue };
     setHelpRequestState(userId, {
       step: helpState.returnToConfirm ? "confirm" : "phone",
       data: nextData,
       returnToConfirm: false,
       editingField: null
     });
-
     await safeReply(replyToken, [
-      helpState.returnToConfirm
-        ? buildHelpConfirmFlex(nextData)
-        : buildHelpStepFlex("phone", nextData)
+      helpState.returnToConfirm ? buildHelpConfirmFlex(nextData) : buildHelpStepFlex("phone", nextData)
     ]);
     continue;
   }
 
   if (helpState.step === "phone") {
-    const nextData = {
-      ...helpState.data,
-      phone: normalizedValue
-    };
-
+    const nextData = { ...helpState.data, phone: normalizedValue };
     setHelpRequestState(userId, {
       step: "confirm",
       data: nextData,
       returnToConfirm: false,
       editingField: null
     });
-
     await safeReply(replyToken, [
       buildHelpConfirmFlex(nextData)
     ]);
     continue;
   }
-}
-
-if (text === "เมนูแอดมิน" || text === "เปิดเมนูแอดมิน" || text === "รีเฟรชเมนูแอดมิน") {
-  if (!isGroupEvent(event)) {
-    await safeReply(replyToken, [{ type: "text", text: "❌ คำสั่งนี้ใช้ได้เฉพาะในไลน์กลุ่มเท่านั้น" }]);
-    continue;
-  }
-
-  if (TEAM_GROUP_ENABLED && !isAllowedTeamGroup(event)) {
-    await safeReply(replyToken, [{ type: "text", text: "❌ เมนูแอดมินใช้ได้เฉพาะในกลุ่มทีมงานที่ได้รับอนุญาตเท่านั้น" }]);
-    continue;
-  }
-
-  if (!(await isAdmin(userId))) {
-    await safeReply(replyToken, [{ type: "text", text: "❌ เมนูนี้สำหรับผู้ดูแลระบบ" }]);
-    continue;
-  }
-
-  const slaCounts = await getSlaMenuCounts();
-
-  await safeReply(replyToken, [buildAdminMenuFlex(slaCounts)], [
-    {
-      type: "text",
-      text:
-        "เมนูแอดมิน SLA PRO\n\n" +
-        `SLA วิกฤต (${slaCounts.overdue})\n` +
-        `ใกล้หลุด SLA (${slaCounts.near_due})\n` +
-        `เคสเปิดทั้งหมด (${slaCounts.open_cases})\n` +
-        `Smart Alert (${slaCounts.smart_alert})`
-    },
-  ]);
-  continue;
-}
-if (text === "คำสั่งดูสิทธิ์") {
-  await safeReply(replyToken, [{
-    type: "text",
-    text:
-      "คำสั่งดูสิทธิ์ทีมงาน\n\n" +
-      "ใช้รูปแบบ:\n" +
-      "ดูสิทธิ์ USER_ID\n\n" +
-      "ตัวอย่าง:\n" +
-      "ดูสิทธิ์ U1234567890abcdef"
-  }]);
-  continue;
-}
-
-if (text === "คำสั่งเพิ่มทีม") {
-  await safeReply(replyToken, [{
-    type: "text",
-    text:
-      "คำสั่งเพิ่มทีม\n\n" +
-      "ใช้รูปแบบ:\n" +
-      "เพิ่มทีม USER_ID role\n\n" +
-      "role ที่ใช้ได้:\n" +
-      "- admin\n- staff\n- viewer\n\n" +
-      "ตัวอย่าง:\n" +
-      "เพิ่มทีม U1234567890abcdef staff"
-  }]);
-  continue;
-}
-
-if (text === "คำสั่งลบทีม") {
-  await safeReply(replyToken, [{
-    type: "text",
-    text:
-      "คำสั่งลบทีม\n\n" +
-      "ใช้รูปแบบ:\n" +
-      "ลบทีม USER_ID\n\n" +
-      "ตัวอย่าง:\n" +
-      "ลบทีม U1234567890abcdef"
-  }]);
-  continue;
-}
-
-if (text === "Smart Alert" || text === "ดู Smart Alert") {
-  const slaCounts = await getSlaMenuCounts();
-  await safeReply(replyToken, [buildSmartAlertFlex(slaCounts)]);
-  continue;
-}
- if (text === "ดู SLA วิกฤต") {
-  const slaCounts = await getSlaMenuCounts();
-  await safeReply(replyToken, [{
-    type: "text",
-    text: buildSlaPreviewText("🚨 รายการ SLA วิกฤต", slaCounts.overdue_rows)
-  }]);
-  continue;
-}
-
-if (text === "ดูใกล้หลุด SLA") {
-  const slaCounts = await getSlaMenuCounts();
-  await safeReply(replyToken, [{
-    type: "text",
-    text: buildSlaPreviewText("⚠️ รายการใกล้หลุด SLA", slaCounts.near_due_rows)
-  }]);
-  continue;
-}
-
-if (text === "ดูเคสเปิดทั้งหมด") {
-  const slaCounts = await getSlaMenuCounts();
-  await safeReply(replyToken, [{
-    type: "text",
-    text:
-      "📋 เคสเปิดทั้งหมด\n\n" +
-      `จำนวนเคสเปิด: ${slaCounts.open_cases}\n` +
-      `SLA วิกฤต: ${slaCounts.overdue}\n` +
-      `ใกล้หลุด SLA: ${slaCounts.near_due}\n` +
-      `Smart Alert: ${slaCounts.smart_alert}`
-  }]);
-  continue;
-}     
-if (text === "เมนูทีมงาน" || text === "เปิดเมนูทีมงาน" || text === "รีเฟรชเมนูทีมงาน") {
-  if (!(await isViewer(userId))) {
-    await safeReply(replyToken, [{ type: "text", text: "เฉพาะทีมงานหรือผู้มีสิทธิ์เท่านั้น" }]);
-    continue;
-  }
-
-  const counts = await getTeamMenuCounts();
-  await safeReply(replyToken, [buildTeamMenuFlex(counts)], [
-    {
-      type: "text",
-      text:
-        "เมนูทีมงาน\n\n" +
-        `ดูเคสใหม่ (${counts.new_cases})\n` +
-        `เคสด่วน (${counts.urgent_cases})\n` +
-        `เคสวันนี้ (${counts.today_cases})`,
-    },
-  ]);
-  continue;
-}
-
-
-if (/^ติดตามอีกครั้ง\s+/i.test(text)) {
-  const caseCode = text.replace(/^ติดตามอีกครั้ง\s+/i, "").trim();
-
-  try {
-    const foundCase = await findLatestCaseByCaseCodeOrPhone(caseCode);
-
-    if (!foundCase) {
-      await safeReply(replyToken, [
-        {
-          type: "text",
-          text: "ไม่พบข้อมูลเคสสำหรับแจ้งเตือนทีม กรุณาลองค้นหาเคสใหม่อีกครั้ง",
-        },
-      ]);
-      continue;
-    }
-
-    if (String(foundCase.status).toLowerCase() === "done") {
-      await safeReply(replyToken, [
-        {
-          type: "text",
-          text: "เคสนี้ปิดแล้ว จึงไม่ส่งแจ้งเตือนทีมซ้ำครับ",
-        },
-      ]);
-      continue;
-    }
-
-    const cooldownMs = 10 * 60 * 1000;
-    const trackerKey = String(foundCase.case_code || caseCode);
-    const now = Date.now();
-    const prev = caseFollowupTracker[trackerKey];
-
-    if (prev && now - prev.lastAt < cooldownMs) {
-      await safeReply(replyToken, [
-        {
-          type: "text",
-          text: "เพิ่มรายการแจ้งเตือนเคสนี้ไปไม่นาน กรุณารอสักครู่แล้วลองอีกครั้ง",
-        },
-      ]);
-      continue;
-    }
-
-    const nextCount = (prev?.count || 0) + 1;
-    caseFollowupTracker[trackerKey] = {
-      lastAt: now,
-      count: nextCount,
-    };
-
-    if (EFFECTIVE_TEAM_GROUP_ID) {
-      await pushTeamFollowupNotification(foundCase, nextCount);
-    } else {
-      console.warn("TEAM GROUP ID NOT SET FOR FOLLOWUP");
-    }
-
-    await safeReply(replyToken, [
-      {
-        type: "text",
-        text: "เพิ่มการแจ้งเตือนเคสนี้ไปที่ทีมงานแล้ว กรุณารอสักครู่แล้วลองอีกครั้ง",
-      },
-    ]);
-  } catch (err) {
-    console.error("FOLLOWUP NOTIFY ERROR:", err);
-    await safeReply(replyToken, [
-      {
-        type: "text",
-        text: "แจ้งเตือนทีมงานไม่สำเร็จ กรุณาลองใหม่อีกครั้ง",
-      },
-    ]);
-  }
-
-  continue;
 }
 
 if (text === "อัปเดตเคส") {

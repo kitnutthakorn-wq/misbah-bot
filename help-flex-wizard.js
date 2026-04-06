@@ -29,12 +29,8 @@ const WIZARD_CONTROL_COMMANDS = new Set([
   "กลับสู่เมนูหลัก",
   "ส่งข้อมูล",
   "ส่งข้อมูล / sent",
-  "sent",
   "แก้ไขข้อมูล",
-  "แก้ชื่อ",
-  "แก้ที่อยู่",
-  "แก้รายละเอียด",
-  "แก้เบอร์"
+  "sent"
 ]);
 
 const STEP_META = {
@@ -70,13 +66,6 @@ const STEP_META = {
   }
 };
 
-const EDIT_FIELD_COMMANDS = {
-  "แก้ชื่อ": "name",
-  "แก้ที่อยู่": "location",
-  "แก้รายละเอียด": "problem",
-  "แก้เบอร์": "phone"
-};
-
 function cleanText(value) {
   return String(value ?? "").replace(/\r/g, "").trim();
 }
@@ -89,11 +78,7 @@ function sanitizeHelpWizardInput(value = "") {
 }
 
 function isWizardControlCommand(value = "") {
-  const text = cleanText(value)
-    .toLowerCase()
-    .replace(/\s+/g, " ");
-
-  return WIZARD_CONTROL_COMMANDS.has(text);
+  return WIZARD_CONTROL_COMMANDS.has(cleanText(value).toLowerCase());
 }
 
 function normalizePhoneInput(value = "") {
@@ -185,7 +170,7 @@ function progressBar(stepOrder = 1) {
       type: "box",
       layout: "vertical",
       flex: 1,
-      height: "8px",
+      height: "10px",
       
       backgroundColor: i <= stepOrder ? COLORS.progressOn : COLORS.progressOff,
       contents: []
@@ -200,8 +185,8 @@ function buildBrandHeader(stepKey = "name") {
     type: "box",
     layout: "vertical",
     backgroundColor: COLORS.brand,
-    paddingAll: "14px",
-    spacing: "sm",
+    paddingAll: "18px",
+    spacing: "md",
     contents: [
       {
         type: "box",
@@ -296,8 +281,8 @@ function buildDataBox(data = {}) {
     borderColor: COLORS.border,
     borderWidth: "1px",
     
-    paddingAll: "12px",
-    spacing: "xs",
+    paddingAll: "16px",
+    spacing: "sm",
     contents: [
       {
         type: "text",
@@ -324,7 +309,7 @@ function buildErrorBox(errorText = "") {
     layout: "vertical",
     backgroundColor: COLORS.dangerSoft,
     
-    paddingAll: "10px",
+    paddingAll: "14px",
     contents: [
       {
         type: "text",
@@ -346,13 +331,13 @@ function buildInstructionCard(stepKey = "name") {
     layout: "vertical",
     backgroundColor: "#ececec",
     
-    paddingAll: "16px",
-    spacing: "sm",
+    paddingAll: "22px",
+    spacing: "md",
     contents: [
       {
         type: "text",
         text: meta.title,
-        size: "xl",
+        size: "xxl",
         weight: "bold",
         color: "#000000",
         wrap: true,
@@ -361,7 +346,7 @@ function buildInstructionCard(stepKey = "name") {
       {
         type: "text",
         text: "ในช่องแชทข้อความด้านล่าง",
-        size: "lg",
+        size: "xl",
         weight: "bold",
         color: "#000000",
         wrap: true,
@@ -399,28 +384,31 @@ function buildHelpStepFlex(stepKey = "name", data = {}, options = {}) {
   const dataBox = buildDataBox(data);
   if (dataBox) contents.push(dataBox);
 
- contents.push(
- {
-  type: "text",
-  text: "กรุณาพิมพ์ข้อมูลในช่องแชทด้านล่างก่อนดำเนินการต่อ",
-  size: "sm",
-  color: COLORS.danger,
-  weight: "bold",
-  wrap: true,
-  align: "center"
- },
- {
-  type: "button",
-  style: "primary",
-  color: COLORS.danger,
-  height: "md",
-  action: {
-    type: "message",
-    label: "ยกเลิก",
-    text: "ยกเลิก"
-  }
- }
-);
+  contents.push(
+    {
+      type: "button",
+      style: "primary",
+      color: COLORS.brand,
+      height: "md",
+      action: {
+        type: "message",
+        label: "พิมพ์ข้อมูลในช่องแชท",
+        text: "พิมพ์ข้อมูลในช่องแชท"
+      }
+    },
+    {
+      type: "button",
+      style: "primary",
+      color: COLORS.danger,
+      height: "md",
+      action: {
+        type: "message",
+        label: "ยกเลิก",
+        text: "ยกเลิก"
+      }
+    }
+  );
+
   return {
     type: "flex",
     altText: `แบบฟอร์มขอความช่วยเหลือ ขั้นตอน ${STEP_META[stepKey]?.order || 1}/5`,
@@ -431,8 +419,8 @@ function buildHelpStepFlex(stepKey = "name", data = {}, options = {}) {
       body: {
         type: "box",
         layout: "vertical",
-        spacing: "md",
-        paddingAll: "14px",
+        spacing: "lg",
+        paddingAll: "18px",
         contents
       }
     }
@@ -485,66 +473,28 @@ function buildHelpConfirmFlex(data = {}, options = {}) {
         ...detailRows
       ]
     },
-   {
-  type: "box",
-  layout: "horizontal",
-  spacing: "sm",
-  contents: [
     {
       type: "button",
-      style: "secondary",
-      flex: 1,
-      action: { type: "message", label: "แก้ชื่อ", text: "แก้ชื่อ" }
+      style: "primary",
+      color: COLORS.brand,
+      height: "md",
+      action: {
+        type: "message",
+        label: "แก้ไขข้อมูล",
+        text: "แก้ไขข้อมูล"
+      }
     },
     {
       type: "button",
-      style: "secondary",
-      flex: 1,
-      action: { type: "message", label: "แก้ที่อยู่", text: "แก้ที่อยู่" }
+      style: "primary",
+      color: COLORS.danger,
+      height: "md",
+      action: {
+        type: "message",
+        label: "ส่งข้อมูล / SENT",
+        text: "ส่งข้อมูล / SENT"
+      }
     }
-  ]
-},
-{
-  type: "box",
-  layout: "horizontal",
-  spacing: "sm",
-  contents: [
-    {
-      type: "button",
-      style: "secondary",
-      flex: 1,
-      action: { type: "message", label: "แก้รายละเอียด", text: "แก้รายละเอียด" }
-    },
-    {
-      type: "button",
-      style: "secondary",
-      flex: 1,
-      action: { type: "message", label: "แก้เบอร์", text: "แก้เบอร์" }
-    }
-  ]
-},
-   {
-  type: "button",
-  style: "primary",
-  color: COLORS.danger,
-  height: "md",
-  action: {
-    type: "message",
-    label: "ส่งข้อมูล / SENT",
-    text: "ส่งข้อมูล / SENT"
-  }
-},
-{
-  type: "button",
-  style: "primary",
-  color: COLORS.danger,
-  height: "md",
-  action: {
-    type: "message",
-    label: "ยกเลิก",
-    text: "ยกเลิก"
-  }
-}
   );
 
   return {
@@ -557,8 +507,8 @@ function buildHelpConfirmFlex(data = {}, options = {}) {
       body: {
         type: "box",
         layout: "vertical",
-        spacing: "md",
-        paddingAll: "14px",
+        spacing: "lg",
+        paddingAll: "18px",
         contents
       }
     }
