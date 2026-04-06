@@ -2731,8 +2731,12 @@ app.post(
     const note = trimmedMessage || composedMessage || current_step || null;
 
     const imageUrls = [];
-    if (req.files?.length) {
-      for (const file of req.files) {
+    const uploadedFiles = [
+  ...(req.files?.images || []),
+  ...(req.files?.updateImages || [])
+];
+if (uploadedFiles.length) {
+  for (const file of uploadedFiles) {
         const ext = (file.mimetype || "image/jpeg").split("/")[1] || "jpg";
         const fileName = `case/${case_code}/${uuidv4()}.${ext}`;
 
