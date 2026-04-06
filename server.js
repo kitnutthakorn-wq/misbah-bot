@@ -5099,22 +5099,6 @@ if (/^ติดตามอีกครั้ง\s+/i.test(text)) {
   }
 
   continue;
-}
-
-if (text === "ขอความช่วยเหลือครั้งแรก") {
-  setHelpRequestState(userId, {
-    step: "name",
-    data: {},
-    returnToConfirm: false,
-    editingField: null
-  });
-
-  await safeReply(replyToken, [
-    buildHelpStepFlex("name", {})
-  ]);
-  continue;
-}
-
 var helpState = getHelpRequestState(userId);
 
 if (text === "ขอความช่วยเหลือครั้งแรก") {
@@ -5667,16 +5651,6 @@ if (text === "ขอความช่วยเหลือครั้งแร
   ]);
   continue;
 }
-      type: "text",
-      text:
-        "เริ่มกรอกข้อมูลขอความช่วยเหลือครับ\n\n" +
-        "ขอชื่อผู้ขอความช่วยเหลือก่อนครับ\n" +
-        "พิมพ์ 'ยกเลิก' ได้ทุกเมื่อหากต้องการหยุดฟอร์ม"
-    }
-  ]);
-  continue;
-}
-
 if (isTemplateOnlyHelpForm(text)) {
   setHelpRequestState(userId, {
     step: "waiting_name",
