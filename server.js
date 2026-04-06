@@ -2694,9 +2694,12 @@ app.get("/api/team/case-detail", async (req, res) => {
 // =========================
 // 🔥 CASE UPDATE (REAL FLOW)
 // =========================
+
+const CASE_UPDATE_MAX_IMAGES = 10;
+
 app.post(
   "/api/case-updates",
-  upload.array("images", 5),
+  upload.array("images", CASE_UPDATE_MAX_IMAGES),
   async (req, res) => {
     try {
       const body = req.body || {};
