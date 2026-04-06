@@ -320,7 +320,7 @@ function buildErrorBox(errorText = "") {
     layout: "vertical",
     backgroundColor: COLORS.dangerSoft,
     
-    paddingAll: "14px",
+    paddingAll: "10px",
     contents: [
       {
         type: "text",
