@@ -342,8 +342,8 @@ function buildInstructionCard(stepKey = "name") {
     layout: "vertical",
     backgroundColor: "#ececec",
     
-    paddingAll: "22px",
-    spacing: "md",
+    paddingAll: "16px",
+    spacing: "sm",
     contents: [
       {
         type: "text",
