@@ -396,17 +396,15 @@ function buildHelpStepFlex(stepKey = "name", data = {}, options = {}) {
   if (dataBox) contents.push(dataBox);
 
   contents.push(
-    {
-      type: "button",
-      style: "primary",
-      color: COLORS.brand,
-      height: "md",
-      action: {
-        type: "message",
-        label: "พิมพ์ข้อมูลในช่องแชท",
-        text: "พิมพ์ข้อมูลในช่องแชท"
-      }
-    },
+   {
+  type: "text",
+  text: "กรุณาพิมพ์ข้อมูลในช่องแชทด้านล่างก่อนดำเนินการต่อ",
+  size: "sm",
+  color: COLORS.danger,
+  weight: "bold",
+  wrap: true,
+  align: "center"
+}
     {
       type: "button",
       style: "primary",
@@ -430,8 +428,8 @@ function buildHelpStepFlex(stepKey = "name", data = {}, options = {}) {
       body: {
         type: "box",
         layout: "vertical",
-        spacing: "lg",
-        paddingAll: "18px",
+        spacing: "md",
+        paddingAll: "14px",
         contents
       }
     }
@@ -484,17 +482,44 @@ function buildHelpConfirmFlex(data = {}, options = {}) {
         ...detailRows
       ]
     },
+   {
+  type: "box",
+  layout: "horizontal",
+  spacing: "sm",
+  contents: [
     {
       type: "button",
-      style: "primary",
-      color: COLORS.brand,
-      height: "md",
-      action: {
-        type: "message",
-        label: "แก้ไขข้อมูล",
-        text: "แก้ไขข้อมูล"
-      }
+      style: "secondary",
+      flex: 1,
+      action: { type: "message", label: "แก้ชื่อ", text: "แก้ชื่อ" }
     },
+    {
+      type: "button",
+      style: "secondary",
+      flex: 1,
+      action: { type: "message", label: "แก้ที่อยู่", text: "แก้ที่อยู่" }
+    }
+  ]
+},
+{
+  type: "box",
+  layout: "horizontal",
+  spacing: "sm",
+  contents: [
+    {
+      type: "button",
+      style: "secondary",
+      flex: 1,
+      action: { type: "message", label: "แก้รายละเอียด", text: "แก้รายละเอียด" }
+    },
+    {
+      type: "button",
+      style: "secondary",
+      flex: 1,
+      action: { type: "message", label: "แก้เบอร์", text: "แก้เบอร์" }
+    }
+  ]
+},
     {
       type: "button",
       style: "primary",
@@ -506,6 +531,17 @@ function buildHelpConfirmFlex(data = {}, options = {}) {
         text: "ส่งข้อมูล / SENT"
       }
     }
+    {
+  type: "button",
+  style: "primary",
+  color: COLORS.danger,
+  height: "md",
+  action: {
+    type: "message",
+    label: "ยกเลิก",
+    text: "ยกเลิก"
+  }
+}
   );
 
   return {
@@ -518,8 +554,8 @@ function buildHelpConfirmFlex(data = {}, options = {}) {
       body: {
         type: "box",
         layout: "vertical",
-        spacing: "lg",
-        paddingAll: "18px",
+        spacing: "md",
+        paddingAll: "14px",
         contents
       }
     }
