@@ -1278,12 +1278,21 @@ const headerColor = headerTheme.color;
 }
 
 function getTeamLiffUrl(baseView = "") {
-  let raw = null;
+  const liffId = String(process.env.TEAM_LIFF_ID || "").trim();
+  const liffUrl = String(process.env.TEAM_LIFF_URL || "").trim();
 
-  if (process.env.TEAM_LIFF_URL) {
-    raw = String(process.env.TEAM_LIFF_URL).trim();
-  } else if (process.env.TEAM_LIFF_ID) {
-    raw = `https://liff.line.me/${String(process.env.TEAM_LIFF_ID).trim()}`;
+  console.log("🔥 getTeamLiffUrl DEBUG:", {
+    liffId,
+    liffUrl,
+    baseView
+  });
+
+  let raw = "";
+
+  if (liffUrl) {
+    raw = liffUrl;
+  } else if (liffId) {
+    raw = `https://liff.line.me/${liffId}`;
   }
 
   if (!raw) {
