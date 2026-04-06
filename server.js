@@ -2701,7 +2701,7 @@ app.post(
   
   try {
     const body = req.body || {};
-    const case_code = cleanText(body.case_code || body.caseCode);
+    const case_code = cleanText(body.case_code || body.caseCode || "");
 
     if (!case_code) {
       return res.status(400).json({ ok: false, error: "case_code is required" });
