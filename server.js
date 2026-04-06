@@ -2703,6 +2703,7 @@ app.post(
   async (req, res) => {
     try {
       const body = req.body || {};
+      console.log("FILES:", req.files?.length, "BODY:", req.body);
       const case_code = cleanText(body.case_code || body.caseCode || "");
 
       if (!case_code) {
