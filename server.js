@@ -5749,8 +5749,17 @@ if (text === "เคสวันนี้") {
           );
 
 try {
-  await pushTeamNewCaseNotification(insertedCase);
 
+  console.log("📣 BEFORE PUSH TEAM:", {
+    case_code: insertedCase?.case_code,
+    EFFECTIVE_TEAM_GROUP_ID,
+    TEAM_GROUP_ID,
+    LINE_GROUP_ID
+  });
+
+  console.log("📣 NOTIFY STATUS BEFORE:", insertedCase?.notify_status || "no_notify_status");
+
+  await pushTeamNewCaseNotification(insertedCase);
             await supabase
               .from("help_requests")
               .update({
