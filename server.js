@@ -2749,8 +2749,9 @@ if (uploadedFiles.length) {
           .createSignedUrl(fileName, 60 * 60 * 24 * 7);
 
         if (signedUrlError) throw signedUrlError;
-        imageUrls.push(data?.signedUrl || "");
-      }
+       if (data?.signedUrl) {
+  imageUrls.push(data.signedUrl);
+}
     }
 
     const incomingImages = toImageArray(body.images);
