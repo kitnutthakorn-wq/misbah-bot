@@ -6555,10 +6555,9 @@ app.post("/api/team/cases/status", async (req, res) => {
 
     const actorName = displayName || "ทีมงาน";
 
-    const payload = {
+  const payload = {
   status: nextStatus,
-  last_action_at: new Date().toISOString(),
-  last_action_by: actorName,
+  last_action_at: new Date().toISOString()
 };
 
     if (nextStatus === "done") {
