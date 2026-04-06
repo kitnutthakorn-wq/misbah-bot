@@ -5132,75 +5132,64 @@ if (helpState) {
     continue;
   }
 
-if (helpState.step === "confirm") {
-  if (EDIT_FIELD_COMMANDS[text]) {
-    const targetStep = EDIT_FIELD_COMMANDS[text];
+  if (helpState.step === "confirm") {
+    if (EDIT_FIELD_COMMANDS[text]) {
+      const targetStep = EDIT_FIELD_COMMANDS[text];
 
-    setHelpRequestState(userId, {
-      step: targetStep,
-      data: helpState.data || {},
-      returnToConfirm: true,
-      editingField: targetStep
-    });
-
-    await safeReply(replyToken, [
-      buildHelpStepFlex(targetStep, helpState.data || {})
-    ]);
-    continue;
-  }
-
-  if (text === "ส่งข้อมูล" || text === "ส่งข้อมูล / SENT") {
-    try {
-      const insertedCase = await saveHelpRequestFromState(userId, helpState.data || {});
-      clearHelpRequestState(userId);
+      setHelpRequestState(userId, {
+        step: targetStep,
+        data: helpState.data || {},
+        returnToConfirm: true,
+        editingField: targetStep
+      });
 
       await safeReply(replyToken, [
-        buildHelpExecutiveSummaryFlex(insertedCase)
+        buildHelpStepFlex(targetStep, helpState.data || {})
       ]);
-    } catch (err) {
-      console.error("STEP FLOW SAVE HELP REQUEST FAILED:", err);
-
-      if (err?.code === "INVALID_PHONE_FORMAT") {
-        setHelpRequestState(userId, {
-          step: "phone",
-          data: helpState.data || {},
-          returnToConfirm: true,
-          editingField: "phone"
-        });
-
-        await safeReply(replyToken, [
-          buildHelpStepFlex("phone", helpState.data || {}, {
-            errorText: "กรุณากรอกเบอร์โทรให้ถูกต้อง เช่น 0812345678"
-          })
-        ]);
-      } else {
-        await safeReply(replyToken, [
-          buildHelpConfirmFlex(helpState.data || {}, {
-            errorText: "บันทึกข้อมูลไม่สำเร็จครับ กรุณาตรวจสอบข้อมูลอีกครั้งแล้วส่งใหม่"
-          })
-        ]);
-      }
+      continue;
     }
-    continue;
-  }
 
-  if (text === "ยกเลิก" || text === "ยกเลิกฟอร์ม") {
-    clearHelpRequestState(userId);
-    await safeReply(replyToken, [buildHelpCancelFlex()]);
-    continue;
-  }
+    if (text === "ส่งข้อมูล" || text === "ส่งข้อมูล / SENT") {
+      try {
+        const insertedCase = await saveHelpRequestFromState(
+          userId,
+          helpState.data || {}
+        );
+        clearHelpRequestState(userId);
 
-  await safeReply(replyToken, [
-    buildHelpConfirmFlex(helpState.data || {}, {
-      errorText: "กรุณาเลือกแก้เฉพาะจุด หรือกดส่งข้อมูล"
-    })
-  ]);
-  continue;
-}
+        await safeReply(replyToken, [
+          buildHelpExecutiveSummaryFlex(insertedCase)
+        ]);
+      } catch (err) {
+        console.error("STEP FLOW SAVE HELP REQUEST FAILED:", err);
+
+        if (err?.code === "INVALID_PHONE_FORMAT") {
+          setHelpRequestState(userId, {
+            step: "phone",
+            data: helpState.data || {},
+            returnToConfirm: true,
+            editingField: "phone"
+          });
+
+          await safeReply(replyToken, [
+            buildHelpStepFlex("phone", helpState.data || {}, {
+              errorText: "กรุณากรอกเบอร์โทรให้ถูกต้อง เช่น 0812345678"
+            })
+          ]);
+        } else {
+          await safeReply(replyToken, [
+            buildHelpConfirmFlex(helpState.data || {}, {
+              errorText: "บันทึกข้อมูลไม่สำเร็จครับ กรุณาตรวจสอบข้อมูลอีกครั้งแล้วส่งใหม่"
+            })
+          ]);
+        }
+      }
+      continue;
+    }
 
     await safeReply(replyToken, [
       buildHelpConfirmFlex(helpState.data || {}, {
-        errorText: "กรุณากดปุ่ม 'แก้ไขข้อมูล' หรือ 'ส่งข้อมูล' เพื่อดำเนินการต่อ"
+        errorText: "กรุณาเลือกแก้เฉพาะจุด หรือกดส่งข้อมูล"
       })
     ]);
     continue;
@@ -5217,7 +5206,12 @@ if (helpState.step === "confirm") {
     continue;
   }
 
-  const validation = validateHelpWizardField(helpState.step, sanitizedValue, helpState.data || {});
+  const validation = validateHelpWizardField(
+    helpState.step,
+    sanitizedValue,
+    helpState.data || {}
+  );
+
   if (!validation.ok) {
     await safeReply(replyToken, [
       buildHelpStepFlex(helpState.step, helpState.data || {}, {
@@ -5236,12 +5230,16 @@ if (helpState.step === "confirm") {
     };
 
     setHelpRequestState(userId, {
-      step: "location",
-      data: nextData
+      step: helpState.returnToConfirm ? "confirm" : "location",
+      data: nextData,
+      returnToConfirm: false,
+      editingField: null
     });
 
     await safeReply(replyToken, [
-      buildHelpStepFlex("location", nextData)
+      helpState.returnToConfirm
+        ? buildHelpConfirmFlex(nextData)
+        : buildHelpStepFlex("location", nextData)
     ]);
     continue;
   }
@@ -5253,12 +5251,16 @@ if (helpState.step === "confirm") {
     };
 
     setHelpRequestState(userId, {
-      step: "problem",
-      data: nextData
+      step: helpState.returnToConfirm ? "confirm" : "problem",
+      data: nextData,
+      returnToConfirm: false,
+      editingField: null
     });
 
     await safeReply(replyToken, [
-      buildHelpStepFlex("problem", nextData)
+      helpState.returnToConfirm
+        ? buildHelpConfirmFlex(nextData)
+        : buildHelpStepFlex("problem", nextData)
     ]);
     continue;
   }
@@ -5270,12 +5272,16 @@ if (helpState.step === "confirm") {
     };
 
     setHelpRequestState(userId, {
-      step: "phone",
-      data: nextData
+      step: helpState.returnToConfirm ? "confirm" : "phone",
+      data: nextData,
+      returnToConfirm: false,
+      editingField: null
     });
 
     await safeReply(replyToken, [
-      buildHelpStepFlex("phone", nextData)
+      helpState.returnToConfirm
+        ? buildHelpConfirmFlex(nextData)
+        : buildHelpStepFlex("phone", nextData)
     ]);
     continue;
   }
@@ -5288,7 +5294,9 @@ if (helpState.step === "confirm") {
 
     setHelpRequestState(userId, {
       step: "confirm",
-      data: nextData
+      data: nextData,
+      returnToConfirm: false,
+      editingField: null
     });
 
     await safeReply(replyToken, [
@@ -5297,7 +5305,6 @@ if (helpState.step === "confirm") {
     continue;
   }
 }
-
 if (text === "อัปเดตเคส") {
   if (!(event.source?.type === "group" && event.source?.groupId === ALLOWED_TEAM_GROUP_ID)) {
     await safeReply(replyToken, [
