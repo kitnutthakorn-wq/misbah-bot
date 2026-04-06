@@ -1548,6 +1548,20 @@ function buildTeamNewCaseText(item = {}) {
 
 async function pushTeamNewCaseNotification(item = {}) {
 
+  console.log("📣 ENTER pushTeamNewCaseNotification:", {
+    case_code: item?.case_code,
+    groupId: EFFECTIVE_TEAM_GROUP_ID
+  });
+
+  console.log("📣 PUSH PAYLOAD PRECHECK:", {
+    hasCaseCode: !!item?.case_code,
+    hasFullName: !!item?.full_name,
+    hasPhone: !!item?.phone
+  });
+
+  // (โค้ดเดิมต่อจากนี้ ห้ามแก้)
+  
+
   // ✅ เติม SLA เข้า item
   const sla = computeSlaState(item);
   item.sla_level = sla.sla_level;
