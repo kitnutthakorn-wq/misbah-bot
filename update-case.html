@@ -324,18 +324,17 @@ async function submitCaseUpdate() {
   try {
     setStatus('กำลังอัปโหลดรูป บันทึกข้อมูล และแจ้งเตือน LINE...', 'warn');
 
-    const formData = new FormData();
+  const formData = new FormData();
 
-  formData.append('case_code', caseCode);
-
-    formData.append('title', title);
-    formData.append('message', message);
-    formData.append('progressStatus', progressStatus);
-    formData.append('senderName', currentProfile?.displayName || 'Unknown');
-    formData.append('senderUserId', currentProfile?.userId || '');
-    formData.append('notifyTeam', notifyTeam ? 'true' : 'false');
-    formData.append('notifyRequester', notifyRequester ? 'true' : 'false');
-    formData.append('clientTimestamp', new Date().toISOString());
+formData.append('case_code', caseCode);
+formData.append('title', title);
+formData.append('message', message);
+formData.append('progressStatus', progressStatus);
+formData.append('senderName', currentProfile?.displayName || 'Unknown');
+formData.append('senderUserId', currentProfile?.userId || '');
+formData.append('notifyTeam', notifyTeam ? 'true' : 'false');
+formData.append('notifyRequester', notifyRequester ? 'true' : 'false');
+formData.append('clientTimestamp', new Date().toISOString());
 
     if (currentLocation) {
       formData.append('latitude', String(currentLocation.latitude));
