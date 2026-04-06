@@ -74,7 +74,12 @@ function getHelpRequestState(userId) {
 
 function setHelpRequestState(userId, payload) {
   if (!userId) return;
-  helpRequestStates[userId] = payload;
+  helpRequestStates[userId] = {
+    step: payload?.step || "name",
+    data: payload?.data || {},
+    returnToConfirm: Boolean(payload?.returnToConfirm),
+    editingField: payload?.editingField || null
+  };
 }
 
 function clearHelpRequestState(userId) {
