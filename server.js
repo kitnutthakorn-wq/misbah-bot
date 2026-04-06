@@ -1277,6 +1277,7 @@ const headerColor = headerTheme.color;
   };
 }
 
+
 function getTeamLiffUrl(baseView = "") {
   const liffId = String(process.env.TEAM_LIFF_ID || "").trim();
   const liffUrl = String(process.env.TEAM_LIFF_URL || "").trim();
