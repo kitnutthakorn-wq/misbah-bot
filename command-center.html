@@ -780,7 +780,7 @@ async function loadCommandMap() {
 
     async function refreshAll() {
       try {
-        await Promise.all([loadSummary(), loadFeed(), loadList(), loadAlerts()]);
+       await Promise.all([loadSummary(), loadFeed(), loadList(), loadAlerts(), loadCommandMap()]);
       } catch (err) {
         console.error(err);
         alert('โหลดข้อมูลไม่สำเร็จ: ' + err.message);
@@ -789,6 +789,12 @@ async function loadCommandMap() {
 
     document.getElementById('refreshBtn').addEventListener('click', refreshAll);
     document.getElementById('loadListBtn').addEventListener('click', loadList);
+
+    document.getElementById('loadMapBtn').addEventListener('click', loadCommandMap);
+    document.getElementById('mapSearchInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') loadCommandMap();
+});
+    
     document.getElementById('daysSelect').addEventListener('change', loadSummary);
     document.getElementById('searchInput').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') loadList();
