@@ -2728,11 +2728,8 @@ app.post(
     const composedMessage = [trimmedTitle ? `[${trimmedTitle}]` : "", trimmedMessage].filter(Boolean).join(" ").trim();
     const note = trimmedMessage || composedMessage || current_step || null;
 
-    const imageUrls = [];
-    const uploadedFiles = [
-  ...(req.files?.images || []),
-  ...(req.files?.updateImages || [])
-];
+   const uploadedFiles = req.files || [];
+    
 if (uploadedFiles.length) {
   for (const file of uploadedFiles) {
         const ext = (file.mimetype || "image/jpeg").split("/")[1] || "jpg";
