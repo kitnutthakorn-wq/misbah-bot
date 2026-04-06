@@ -2725,7 +2725,7 @@ app.post(
     const trimmedMessage = cleanText(body.message || body.note || body.latest_note);
     const composedMessage = [trimmedTitle ? `[${trimmedTitle}]` : "", trimmedMessage].filter(Boolean).join(" ").trim();
     const note = trimmedMessage || composedMessage || current_step || null;
-
+   const imageUrls = [];
    const uploadedFiles = req.files || [];
     
 if (uploadedFiles.length) {
