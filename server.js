@@ -705,11 +705,9 @@ async function upsertCaseUpdateLegacy({
   });
 
   const syncPatch = {
-    last_action_at: inserted.updated_at || new Date().toISOString(),
-    latest_note: inserted.latest_note || detail || null,
-    last_action_by: inserted.updater_name || inserted.updated_by || updatedBy || null
-  };
-
+  last_action_at: inserted.updated_at || new Date().toISOString(),
+  latest_note: inserted.latest_note || detail || null
+};
   const { error: syncError } = await supabase
     .from("help_requests")
     .update(syncPatch)
