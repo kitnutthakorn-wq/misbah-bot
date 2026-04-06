@@ -2696,200 +2696,221 @@ app.post(
   "/api/case-updates",
   upload.array("images", 5),
   async (req, res) => {
-  
-  try {
-    const body = req.body || {};
-    const case_code = cleanText(body.case_code || body.caseCode || "");
+    try {
+      const body = req.body || {};
+      const case_code = cleanText(body.case_code || body.caseCode || "");
 
-    if (!case_code) {
-      return res.status(400).json({ ok: false, error: "case_code is required" });
-    }
-
-    const helpRequest = await getHelpRequestByCaseCode(case_code);
-    const case_id = body.case_id || body.caseId || helpRequest?.id || null;
-
-    const rawStatus = cleanText(body.status || body.status_after || body.rawStatusAfter || body.progressStatus);
-    const status_after = rawStatus || null;
-    const current_step = cleanText(body.current_step || body.currentStep || body.title);
-    const waiting_for = cleanText(body.waiting_for || body.waitingFor) || CASE_UPDATE_WAITING_FOR_MAP[current_step] || null;
-    const progress_percent = toNumberOrNull(body.progress_percent ?? body.progressPercent) ?? CASE_UPDATE_PROGRESS_MAP[current_step] ?? null;
-
-    const updater_name = toNullableText(body.updater_name || body.senderName || body.updated_by_name || body.staff_name || body.staffName || body.updated_by || body.updater_user_id);
-    const updater_user_id = toNullableText(body.updater_user_id || body.senderUserId || body.updated_by_user_id || body.updated_by);
-    const updated_by = toNullableText(body.updated_by || updater_user_id || updater_name);
-    const location_text = toNullableText(body.location_text || body.locationText);
-    const latitude = toNumberOrNull(body.latitude);
-    const longitude = toNumberOrNull(body.longitude);
-
-    const trimmedTitle = cleanText(body.title);
-    const trimmedMessage = cleanText(body.message || body.note || body.latest_note);
-    const composedMessage = [trimmedTitle ? `[${trimmedTitle}]` : "", trimmedMessage].filter(Boolean).join(" ").trim();
-    const note = trimmedMessage || composedMessage || current_step || null;
-   const imageUrls = [];
-   const uploadedFiles = req.files || [];
-    
-if (uploadedFiles.length) {
-  for (const file of uploadedFiles) {
-        const ext = (file.mimetype || "image/jpeg").split("/")[1] || "jpg";
-        const fileName = `case/${case_code}/${uuidv4()}.${ext}`;
-
-        const { error: uploadError } = await supabase
-          .storage
-          .from("case-updates")
-          .upload(fileName, file.buffer, {
-            contentType: file.mimetype,
-            upsert: false
-          });
-
-        if (uploadError) throw uploadError;
-
-        const { data, error: signedUrlError } = await supabase
-          .storage
-          .from("case-updates")
-          .createSignedUrl(fileName, 60 * 60 * 24 * 7);
-
-        if (signedUrlError) throw signedUrlError;
-       if (data?.signedUrl) {
-  imageUrls.push(data.signedUrl);
-}
-    }
-
-    const incomingImages = toImageArray(body.images);
-    const mergedImages = [...incomingImages, ...imageUrls].filter(Boolean);
-
-    const insertedUpdate = await insertCaseUpdateLog({
-      case_id,
-      case_code,
-      status: status_after,
-      status_after,
-      current_step,
-      waiting_for,
-      progress_percent,
-      note,
-      latest_note: note,
-      message: composedMessage || note,
-      updated_by,
-      updated_by_user_id: updater_user_id,
-      updated_by_role: toNullableText(body.updated_by_role),
-      updater_name,
-      updater_user_id,
-      location_text,
-      latitude,
-      longitude,
-      images: mergedImages
-    });
-
-    const latestFields = {
-  latest_note: insertedUpdate.latest_note || note || null,
-  last_action_at: insertedUpdate.updated_at || new Date().toISOString()
-};
-
-    if (insertedUpdate.status_after) {
-      latestFields.status = insertedUpdate.status_after;
-    }
-
-    if (Number.isFinite(insertedUpdate.latitude) && Number.isFinite(insertedUpdate.longitude)) {
-      latestFields.latitude = insertedUpdate.latitude;
-      latestFields.longitude = insertedUpdate.longitude;
-      latestFields.location_text =
-        insertedUpdate.location_text || `${insertedUpdate.latitude}, ${insertedUpdate.longitude}`;
-    } else if (insertedUpdate.location_text) {
-      latestFields.location_text = insertedUpdate.location_text;
-    }
-
-    if (case_id || case_code) {
-      let updateQuery = supabase.from("help_requests").update(latestFields);
-      if (case_id) {
-        updateQuery = updateQuery.eq("id", case_id);
-      } else {
-        updateQuery = updateQuery.eq("case_code", case_code);
+      if (!case_code) {
+        return res.status(400).json({ ok: false, error: "case_code is required" });
       }
 
-      const { error: helpReqUpdateError } = await updateQuery;
-      if (helpReqUpdateError) {
-        console.error("help_requests sync error:", helpReqUpdateError);
-      }
-    }
+      const helpRequest = await getHelpRequestByCaseCode(case_code);
+      const case_id = body.case_id || body.caseId || helpRequest?.id || null;
 
-    broadcastSse("case_update", {
-      scope: "team_workspace",
-      item: {
-        id: insertedUpdate.id,
-        case_id: insertedUpdate.case_id || case_id || null,
-        case_code: insertedUpdate.case_code,
-        progress_percent: insertedUpdate.progress_percent,
-        current_step: insertedUpdate.current_step,
-        waiting_for: insertedUpdate.waiting_for,
-        latest_note: insertedUpdate.latest_note,
-        note: insertedUpdate.note || insertedUpdate.latest_note,
-        updated_at: insertedUpdate.updated_at,
-        updated_by: insertedUpdate.updated_by,
-        updated_by_user_id: insertedUpdate.updated_by_user_id,
-        updated_by_role: insertedUpdate.updated_by_role,
-        updater_name: insertedUpdate.updater_name,
-        message: insertedUpdate.message,
-        images: insertedUpdate.images || [],
-        status_after: insertedUpdate.status_after,
-        status: insertedUpdate.status || insertedUpdate.status_after || null,
-        latitude: insertedUpdate.latitude ?? null,
-        longitude: insertedUpdate.longitude ?? null,
-        location_text: insertedUpdate.location_text || ""
-      }
-    });
+      const rawStatus = cleanText(body.status || body.status_after || body.rawStatusAfter || body.progressStatus);
+      const status_after = rawStatus || null;
+      const current_step = cleanText(body.current_step || body.currentStep || body.title);
+      const waiting_for =
+        cleanText(body.waiting_for || body.waitingFor) ||
+        CASE_UPDATE_WAITING_FOR_MAP[current_step] ||
+        null;
+      const progress_percent =
+        toNumberOrNull(body.progress_percent ?? body.progressPercent) ??
+        CASE_UPDATE_PROGRESS_MAP[current_step] ??
+        null;
 
-    if (Number.isFinite(insertedUpdate.latitude) && Number.isFinite(insertedUpdate.longitude)) {
-      broadcastSse("case_geo_updated", {
+      const updater_name = toNullableText(
+        body.updater_name ||
+        body.senderName ||
+        body.updated_by_name ||
+        body.staff_name ||
+        body.staffName ||
+        body.updated_by ||
+        body.updater_user_id
+      );
+      const updater_user_id = toNullableText(
+        body.updater_user_id ||
+        body.senderUserId ||
+        body.updated_by_user_id ||
+        body.updated_by
+      );
+      const updated_by = toNullableText(body.updated_by || updater_user_id || updater_name);
+      const location_text = toNullableText(body.location_text || body.locationText);
+      const latitude = toNumberOrNull(body.latitude);
+      const longitude = toNumberOrNull(body.longitude);
+
+      const trimmedTitle = cleanText(body.title);
+      const trimmedMessage = cleanText(body.message || body.note || body.latest_note);
+      const composedMessage = [trimmedTitle ? `[${trimmedTitle}]` : "", trimmedMessage]
+        .filter(Boolean)
+        .join(" ")
+        .trim();
+      const note = trimmedMessage || composedMessage || current_step || null;
+
+      const imageUrls = [];
+      const uploadedFiles = req.files || [];
+
+      if (uploadedFiles.length) {
+        for (const file of uploadedFiles) {
+          const ext = ((file.mimetype || "image/jpeg").split("/")[1] || "jpg").toLowerCase();
+          const fileName = `case/${case_code}/${uuidv4()}.${ext}`;
+
+          const { error: uploadError } = await supabase
+            .storage
+            .from("case-updates")
+            .upload(fileName, file.buffer, {
+              contentType: file.mimetype,
+              upsert: false
+            });
+
+          if (uploadError) throw uploadError;
+
+          const { data, error: signedUrlError } = await supabase
+            .storage
+            .from("case-updates")
+            .createSignedUrl(fileName, 60 * 60 * 24 * 7);
+
+          if (signedUrlError) throw signedUrlError;
+
+          if (data?.signedUrl) {
+            imageUrls.push(data.signedUrl);
+          }
+        }
+      }
+
+      const incomingImages = toImageArray(body.images);
+      const mergedImages = [...incomingImages, ...imageUrls].filter(Boolean);
+
+      const insertedUpdate = await insertCaseUpdateLog({
+        case_id,
+        case_code,
+        status: status_after,
+        status_after,
+        current_step,
+        waiting_for,
+        progress_percent,
+        note,
+        latest_note: note,
+        message: composedMessage || note,
+        updated_by,
+        updated_by_user_id: updater_user_id,
+        updated_by_role: toNullableText(body.updated_by_role),
+        updater_name,
+        updater_user_id,
+        location_text,
+        latitude,
+        longitude,
+        images: mergedImages
+      });
+
+      const latestFields = {
+        latest_note: insertedUpdate.latest_note || note || null,
+        last_action_at: insertedUpdate.updated_at || new Date().toISOString()
+      };
+
+      if (insertedUpdate.status_after) {
+        latestFields.status = insertedUpdate.status_after;
+      }
+
+      if (Number.isFinite(insertedUpdate.latitude) && Number.isFinite(insertedUpdate.longitude)) {
+        latestFields.latitude = insertedUpdate.latitude;
+        latestFields.longitude = insertedUpdate.longitude;
+        latestFields.location_text =
+          insertedUpdate.location_text || `${insertedUpdate.latitude}, ${insertedUpdate.longitude}`;
+      } else if (insertedUpdate.location_text) {
+        latestFields.location_text = insertedUpdate.location_text;
+      }
+
+      if (case_id || case_code) {
+        let updateQuery = supabase.from("help_requests").update(latestFields);
+        if (case_id) {
+          updateQuery = updateQuery.eq("id", case_id);
+        } else {
+          updateQuery = updateQuery.eq("case_code", case_code);
+        }
+
+        const { error: helpReqUpdateError } = await updateQuery;
+        if (helpReqUpdateError) {
+          console.error("help_requests sync error:", helpReqUpdateError);
+        }
+      }
+
+      broadcastSse("case_update", {
         scope: "team_workspace",
         item: {
+          id: insertedUpdate.id,
+          case_id: insertedUpdate.case_id || case_id || null,
           case_code: insertedUpdate.case_code,
-          latitude: insertedUpdate.latitude,
-          longitude: insertedUpdate.longitude,
-          location_text: insertedUpdate.location_text || "",
+          progress_percent: insertedUpdate.progress_percent,
+          current_step: insertedUpdate.current_step,
+          waiting_for: insertedUpdate.waiting_for,
+          latest_note: insertedUpdate.latest_note,
+          note: insertedUpdate.note || insertedUpdate.latest_note,
           updated_at: insertedUpdate.updated_at,
-          status: insertedUpdate.status_after || insertedUpdate.status || null,
-          latest_note: insertedUpdate.latest_note || ""
+          updated_by: insertedUpdate.updated_by,
+          updated_by_user_id: insertedUpdate.updated_by_user_id,
+          updated_by_role: insertedUpdate.updated_by_role,
+          updater_name: insertedUpdate.updater_name,
+          message: insertedUpdate.message,
+          images: insertedUpdate.images || [],
+          status_after: insertedUpdate.status_after,
+          status: insertedUpdate.status || insertedUpdate.status_after || null,
+          latitude: insertedUpdate.latitude ?? null,
+          longitude: insertedUpdate.longitude ?? null,
+          location_text: insertedUpdate.location_text || ""
         }
       });
-    }
 
-    broadcastSse("recent_activity_refresh", {
-      scope: "team_workspace",
-      case_code: insertedUpdate.case_code,
-      updated_at: insertedUpdate.updated_at
-    });
+      if (Number.isFinite(insertedUpdate.latitude) && Number.isFinite(insertedUpdate.longitude)) {
+        broadcastSse("case_geo_updated", {
+          scope: "team_workspace",
+          item: {
+            case_code: insertedUpdate.case_code,
+            latitude: insertedUpdate.latitude,
+            longitude: insertedUpdate.longitude,
+            location_text: insertedUpdate.location_text || "",
+            updated_at: insertedUpdate.updated_at,
+            status: insertedUpdate.status_after || insertedUpdate.status || null,
+            latest_note: insertedUpdate.latest_note || ""
+          }
+        });
+      }
 
-    if (CHANNEL_ACCESS_TOKEN && EFFECTIVE_TEAM_GROUP_ID) {
-      await fetch("https://api.line.me/v2/bot/message/push", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${CHANNEL_ACCESS_TOKEN}`
-        },
-        body: JSON.stringify({
-          to: EFFECTIVE_TEAM_GROUP_ID,
-          messages: [{
-            type: "text",
-            text:
-              `📢 อัปเดตเคส
-` +
-              `เลขเคส: ${case_code}
-` +
-              `ผู้ส่ง: ${updater_name || updated_by || "-"}
-` +
-              `รายละเอียด: ${note || composedMessage || "-"}
-` +
-              `${mergedImages.length ? `แนบรูป ${mergedImages.length} รูป` : "ไม่มีรูป"}`
-          }]
-        })
+      broadcastSse("recent_activity_refresh", {
+        scope: "team_workspace",
+        case_code: insertedUpdate.case_code,
+        updated_at: insertedUpdate.updated_at
       });
-    }
 
-    return res.json({ ok: true, data: insertedUpdate });
-  } catch (err) {
-    console.error("CASE UPDATE ERROR:", err);
-    return res.status(500).json({ ok: false, error: err.message });
+      if (CHANNEL_ACCESS_TOKEN && EFFECTIVE_TEAM_GROUP_ID) {
+        await fetch("https://api.line.me/v2/bot/message/push", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${CHANNEL_ACCESS_TOKEN}`
+          },
+          body: JSON.stringify({
+            to: EFFECTIVE_TEAM_GROUP_ID,
+            messages: [{
+              type: "text",
+              text:
+                `📢 อัปเดตเคส\n` +
+                `เลขเคส: ${case_code}\n` +
+                `ผู้ส่ง: ${updater_name || updated_by || "-"}\n` +
+                `รายละเอียด: ${note || composedMessage || "-"}\n` +
+                `${mergedImages.length ? `แนบรูป ${mergedImages.length} รูป` : "ไม่มีรูป"}`
+            }]
+          })
+        });
+      }
+
+      return res.json({ ok: true, data: insertedUpdate });
+    } catch (err) {
+      console.error("CASE UPDATE ERROR:", err);
+      return res.status(500).json({ ok: false, error: err.message });
+    }
   }
-});
+);
 
 app.get("/logo.png", (req, res) => {
   res.sendFile(path.join(__dirname, "Logo.png"));
