@@ -132,7 +132,12 @@ async function saveHelpRequestFromState(userId, payload = {}) {
   const full_name = String(payload.full_name || "").trim();
   const location = String(payload.location || "").trim();
   const problem = String(payload.problem || "").trim();
-  const phone = String(payload.phone || "").trim();
+  const phone = normalizePhoneInput(String(payload.phone || "").trim());
+  if (phone && !isValidPhoneInput(phone)) {
+  const error = new Error("INVALID_PHONE_FORMAT");
+  error.code = "INVALID_PHONE_FORMAT";
+  throw error;
+}
 console.log("🔥 SAVE DEBUG:", {
   userId,
   payload,
