@@ -773,20 +773,35 @@ async function loadCommandMap() {
     }
 
     function bindRealtime() {
-      if (eventSource) eventSource.close();
-      eventSource = new EventSource('/api/stream');
-      eventSource.onopen = () => {
-        document.getElementById('streamState').textContent = 'เชื่อมต่อข้อมูลสดแล้ว';
-      };
-      eventSource.onerror = () => {
-        document.getElementById('streamState').textContent = 'สัญญาณสดสะดุด กำลัง reconnect';
-      };
-      eventSource.addEventListener('case_created', refreshAll);
-      eventSource.addEventListener('case_updated', refreshAll);
-      eventSource.addEventListener('heartbeat', () => {
-        document.getElementById('streamState').textContent = 'เชื่อมต่อข้อมูลสดแล้ว';
-      });
-    }
+  if (eventSource) eventSource.close();
+
+  eventSource = new EventSource('/api/stream');
+
+  eventSource.onopen = () => {
+    document.getElementById('streamState').textContent = 'เชื่อมต่อข้อมูลสดแล้ว';
+  };
+
+  eventSource.onerror = () => {
+    document.getElementById('streamState').textContent = 'สัญญาณสดสะดุด กำลัง reconnect';
+  };
+
+  const onLiveUpdate = (ev) => {
+    try {
+      const payload = JSON.parse(ev.data || '{}');
+      console.log('LIVE EVENT:', payload);
+    } catch (_) {}
+
+    document.getElementById('streamState').textContent = 'มีอัปเดตสด กำลังรีเฟรช...';
+    scheduleLiveRefresh(500);
+  };
+
+  eventSource.addEventListener('case_created', onLiveUpdate);
+  eventSource.addEventListener('case_updated', onLiveUpdate);
+
+  eventSource.addEventListener('heartbeat', () => {
+    document.getElementById('streamState').textContent = 'เชื่อมต่อข้อมูลสดแล้ว';
+  });
+}
 
     async function refreshAll() {
       try {
