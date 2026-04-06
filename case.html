@@ -853,6 +853,8 @@ async function loadProjects(){
       if(!caseId){ alert("ไม่พบ id ของเคส"); return; }
       try{
         const data = await fetchJSON(`/api/case/${caseId}`);
+        console.log("CASE DATA:", data);
+        console.log("LATEST UPDATE:", data.latest_update);
         document.getElementById("case_code").innerHTML = escapeHtml(data.case_code || "-");
         document.getElementById("full_name").innerHTML = escapeHtml(data.full_name || "-");
         document.getElementById("phone").innerHTML = escapeHtml(data.phone || "-");
