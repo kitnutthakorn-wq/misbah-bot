@@ -1547,7 +1547,11 @@ function buildTeamNewCaseText(item = {}) {
 }
 
 async function pushTeamNewCaseNotification(item = {}) {
-
+if (!EFFECTIVE_TEAM_GROUP_ID) {
+  console.error("❌ NO GROUP ID → STOP PUSH");
+  return;
+}
+  
   console.log("📣 ENTER pushTeamNewCaseNotification:", {
     case_code: item?.case_code,
     groupId: EFFECTIVE_TEAM_GROUP_ID
