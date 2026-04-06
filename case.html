@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>รายละเอียดเคส V16 PRO MAX | Misbah FD </title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     :root{--brand:#0b7c86;--brand-dark:#163c72;--accent:#1f8f4d;--bg:#edf2f5;--card:#fff;--line:#dbe3ea;--muted:#6b7280;--shadow:0 10px 24px rgba(18,36,58,.08)}
     *{box-sizing:border-box}
@@ -468,46 +469,29 @@ button:active{transform:translateY(0)}
        
         </div> 
       </div>
-// =========================
-// API: CASES MAP (GPS FEED)
-// =========================
-app.get("/api/cases/map", async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from("help_requests")
-      .select(`
-        case_code,
-        full_name,
-        phone,
-        problem,
-        status,
-        priority,
-        latitude,
-        longitude,
-        location_text,
-        last_action_at,
-        created_at
-      `)
-      .not("latitude", "is", null)
-      .not("longitude", "is", null);
 
-    if (error) throw error;
+<div class="card panel-card">
+  <div class="panel-header">
+    <h2 class="panel-title">พิกัดและแผนที่</h2>
+    <div class="panel-sub">แสดงตำแหน่งล่าสุดของเคส พร้อมลิงก์เปิดใน Google Maps</div>
+  </div>
 
-    const rows = (data || [])
-      .filter(r => r.latitude && r.longitude)
-      .map(r => ({
-        ...r,
-        status: (r.status === "progress") ? "in_progress" : r.status,
-        map_order_time: r.last_action_at || r.created_at
-      }))
-      .sort((a, b) => new Date(b.map_order_time) - new Date(a.map_order_time));
+  <div class="grid case-info-grid">
+    <div><div class="label">Latitude</div><div class="value" id="latitude">-</div></div>
+    <div><div class="label">Longitude</div><div class="value" id="longitude">-</div></div>
+    <div class="full"><div class="label">พิกัดหน้างานล่าสุด</div><div class="value" id="map_location_text">-</div></div>
+    <div class="full">
+      <div class="label">ลิงก์นำทาง</div>
+      <div class="value">
+        <a id="google_maps_link" href="#" target="_blank" rel="noopener noreferrer">เปิดใน Google Maps</a>
+      </div>
+    </div>
+    <div class="full">
+      <div id="caseMap" style="width:100%;height:320px;border-radius:16px;overflow:hidden;background:#f3f4f6;"></div>
+    </div>
+  </div>
+</div>
 
-    res.json(rows);
-  } catch (err) {
-    console.error("❌ /api/cases/map error:", err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
 <div class="card panel-card field-progress-wrapper">
   <div class="panel-header">
     <h2 class="panel-title">ความคืบหน้าภาคสนาม</h2>
@@ -623,10 +607,84 @@ app.get("/api/cases/map", async (req, res) => {
 
   <div class="toast-wrap" id="toastWrap"></div>
  
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     const params = new URLSearchParams(window.location.search);
     const caseId = params.get("id");
     let eventSource = null;
+    let caseMap = null;
+    let caseMapMarker = null;
+
+    function renderCaseMap(lat, lng, locationText = "", caseCode = "") {
+      const mapEl = document.getElementById("caseMap");
+      const latEl = document.getElementById("latitude");
+      const lngEl = document.getElementById("longitude");
+      const locEl = document.getElementById("map_location_text");
+      const linkEl = document.getElementById("google_maps_link");
+
+      if (latEl) latEl.textContent = lat ?? "-";
+      if (lngEl) lngEl.textContent = lng ?? "-";
+      if (locEl) locEl.textContent = locationText || "-";
+
+      const latNum = Number(lat);
+      const lngNum = Number(lng);
+
+      if (
+        !mapEl ||
+        !Number.isFinite(latNum) ||
+        !Number.isFinite(lngNum) ||
+        latNum === 0 ||
+        lngNum === 0
+      ) {
+        if (linkEl) {
+          linkEl.removeAttribute("href");
+          linkEl.textContent = "ยังไม่มีพิกัด";
+        }
+        if (mapEl) {
+          mapEl.innerHTML = '<div style="padding:24px;text-align:center;color:#6b7280;">ยังไม่มีข้อมูลพิกัด</div>';
+        }
+        return;
+      }
+
+      const gmapUrl = `https://www.google.com/maps?q=${latNum},${lngNum}`;
+      if (linkEl) {
+        linkEl.href = gmapUrl;
+        linkEl.textContent = "เปิดใน Google Maps";
+      }
+
+      if (!window.L) {
+        if (mapEl) {
+          mapEl.innerHTML = '<div style="padding:24px;text-align:center;color:#6b7280;">โหลดแผนที่ไม่สำเร็จ</div>';
+        }
+        return;
+      }
+
+      if (!caseMap) {
+        caseMap = L.map("caseMap").setView([latNum, lngNum], 15);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution: "&copy; OpenStreetMap"
+        }).addTo(caseMap);
+        caseMapMarker = L.marker([latNum, lngNum]).addTo(caseMap);
+      } else {
+        caseMap.setView([latNum, lngNum], 15);
+        if (caseMapMarker) {
+          caseMapMarker.setLatLng([latNum, lngNum]);
+        } else {
+          caseMapMarker = L.marker([latNum, lngNum]).addTo(caseMap);
+        }
+      }
+
+      caseMapMarker.bindPopup(`
+        <div style="min-width:180px">
+          <strong>${escapeHtml(caseCode || "เคส")}</strong><br>
+          ${escapeHtml(locationText || "ตำแหน่งล่าสุด")}
+        </div>
+      `);
+
+      setTimeout(() => {
+        if (caseMap) caseMap.invalidateSize();
+      }, 50);
+    }
 function statusThai(status) {
   const s = String(status || '').trim().toLowerCase();
 
@@ -899,24 +957,18 @@ async function loadProjects(){
         document.getElementById("phone").innerHTML = escapeHtml(data.phone || "-");
         document.getElementById("location").innerHTML = escapeHtml(data.location || "-");
        
+const latestLocation = data.latest_update || {};
+const lat = latestLocation.latitude ?? data.latitude ?? null;
+const lng = latestLocation.longitude ?? data.longitude ?? null;
+const locationText =
+  latestLocation.location_text ||
+  data.location_text ||
+  ((lat !== null && lat !== undefined) && (lng !== null && lng !== undefined)
+    ? `${lat}, ${lng}`
+    : "-");
+
 const locationTextEl = document.getElementById("location_text");
-
 if (locationTextEl) {
-  const latest = data.latest_update || {};
-
-  const lat =
-    latest.latitude ?? data.latitude ?? null;
-
-  const lng =
-    latest.longitude ?? data.longitude ?? null;
-
-  const locationText =
-    latest.location_text ||
-    data.location_text ||
-    ((lat !== null && lat !== undefined) && (lng !== null && lng !== undefined)
-      ? `${lat}, ${lng}`
-      : "-");
-
   if (data.case_code && locationText !== "-") {
     locationTextEl.innerHTML = `
       <a href="/map.html?case_code=${encodeURIComponent(data.case_code)}"
@@ -930,6 +982,8 @@ if (locationTextEl) {
     locationTextEl.innerHTML = escapeHtml(locationText);
   }
 }
+
+renderCaseMap(lat, lng, locationText, data.case_code);
         document.getElementById("assigned_to").innerHTML = escapeHtml(data.assigned_to || "-");
         document.getElementById("created_at").innerHTML = escapeHtml(formatThaiDateTime(data.created_at));
         document.getElementById("problem").innerHTML = escapeHtml(data.problem || "-");
