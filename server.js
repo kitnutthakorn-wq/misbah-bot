@@ -2776,10 +2776,9 @@ app.post("/api/case-updates", upload.array("images", 5), async (req, res) => {
     });
 
     const latestFields = {
-      latest_note: insertedUpdate.latest_note || note || null,
-      last_action_at: insertedUpdate.updated_at || new Date().toISOString(),
-      last_action_by: insertedUpdate.updater_name || insertedUpdate.updated_by || null
-    };
+  latest_note: insertedUpdate.latest_note || note || null,
+  last_action_at: insertedUpdate.updated_at || new Date().toISOString()
+};
 
     if (insertedUpdate.status_after) {
       latestFields.status = insertedUpdate.status_after;
