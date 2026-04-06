@@ -1,6 +1,8 @@
 // PRODUCTION LOCKED BASELINE
 require("dotenv").config();
-
+console.log("🔥 ENV CHECK:", {
+  TEAM_LIFF_ID: process.env.TEAM_LIFF_ID
+});
 const express = require("express");
 const crypto = require("crypto");
 const path = require("path");
