@@ -31,6 +31,10 @@ const WIZARD_CONTROL_COMMANDS = new Set([
   "ส่งข้อมูล / sent",
   "แก้ไขข้อมูล",
   "sent"
+  "แก้ชื่อ",
+"แก้ที่อยู่",
+"แก้รายละเอียด",
+"แก้เบอร์",
 ]);
 
 const STEP_META = {
@@ -64,6 +68,13 @@ const STEP_META = {
     example: "หากข้อมูลถูกต้องให้กดส่งข้อมูล",
     helper: "ตรวจสอบข้อมูลก่อนส่งเข้าสู่ระบบ"
   }
+};
+
+const EDIT_FIELD_COMMANDS = {
+  "แก้ชื่อ": "name",
+  "แก้ที่อยู่": "location",
+  "แก้รายละเอียด": "problem",
+  "แก้เบอร์": "phone"
 };
 
 function cleanText(value) {
