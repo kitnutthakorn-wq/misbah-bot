@@ -756,4 +756,5 @@ module.exports = {
   isValidPhoneInput,
   validateHelpWizardField,
   isWizardControlCommand
+  EDIT_FIELD_COMMANDS
 };
