@@ -348,7 +348,7 @@ function buildInstructionCard(stepKey = "name") {
       {
         type: "text",
         text: meta.title,
-        size: "xxl",
+        size: "xl",
         weight: "bold",
         color: "#000000",
         wrap: true,
@@ -357,7 +357,7 @@ function buildInstructionCard(stepKey = "name") {
       {
         type: "text",
         text: "ในช่องแชทข้อความด้านล่าง",
-        size: "xl",
+        size: "lg",
         weight: "bold",
         color: "#000000",
         wrap: true,
