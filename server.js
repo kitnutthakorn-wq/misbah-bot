@@ -1296,7 +1296,8 @@ function getTeamLiffUrl(baseView = "") {
   }
 
   if (!raw) {
-    throw new Error("❌ TEAM_LIFF_URL / TEAM_LIFF_ID not set");
+    console.error("❌ STILL NO LIFF:", { liffId, liffUrl });
+    return null; // 🔥 เปลี่ยนจาก throw → ไม่ให้ระบบพังทั้งเมนู
   }
 
   if (!baseView) return raw;
@@ -1305,7 +1306,6 @@ function getTeamLiffUrl(baseView = "") {
     ? `${raw}&view=${encodeURIComponent(baseView)}`
     : `${raw}?view=${encodeURIComponent(baseView)}`;
 }
-
 function buildTeamMenuFlex() {
   function menuCard(title, subtitle, accentColor, softBg, action) {
     return {
