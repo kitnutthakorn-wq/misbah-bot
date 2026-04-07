@@ -566,7 +566,11 @@ async function loadCases() {
       const data = await safeFetchJson(
         `${CONFIG.API_BASE_URL}${CONFIG.CASES_ENDPOINT}`
       );
-      allCases = Array.isArray(data?.cases) ? data.cases : [];
+     allCases = Array.isArray(data?.cases)
+  ? data.cases
+  : Array.isArray(data)
+    ? data
+    : [];
       console.log('LOAD CASES COUNT:', allCases.length, allCases);
     }
   } catch (err) {
