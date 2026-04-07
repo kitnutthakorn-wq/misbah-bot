@@ -5115,7 +5115,10 @@ if (text === "เมนูทีมงาน") {
   continue;
 }
 
-const setRoleMatch = String(text || "").trim().match(/^ตั้งสิทธิ์\s+(U[a-zA-Z0-9]+)\s+(admin|staff|viewer)$/i);
+const normalizedSetRoleText = String(text || "").trim().replace(/\n+/g, " ");
+const setRoleMatch = normalizedSetRoleText.match(
+  /^ตั้งสิทธิ์\s+(U[a-zA-Z0-9]+)\s+(admin|staff|viewer)$/i
+);
 if (setRoleMatch) {
   if (!(await isAdmin(userId))) {
     await safeReply(replyToken, [
