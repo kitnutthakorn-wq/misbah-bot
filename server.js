@@ -854,6 +854,8 @@ function buildTeamMemberBubble(item = {}) {
   const role = item.line_user_roles?.[0]?.role || "guest";
   const isActive = item.line_user_roles?.[0]?.is_active !== false;
   const theme = getTeamRoleTheme(role);
+  const displayName = getDisplayNameOrFallback(item);
+  const shortUserId = getShortUserId(item.line_user_id || "");
 
   return {
     type: "bubble",
@@ -862,14 +864,14 @@ function buildTeamMemberBubble(item = {}) {
       type: "box",
       layout: "vertical",
       backgroundColor: theme.color,
-      paddingAll: "16px",
+      paddingAll: "18px",
       contents: [
         {
           type: "text",
-          text: item.display_name || item.line_user_id || "-",
+          text: displayName,
           color: "#FFFFFF",
           weight: "bold",
-          size: "lg",
+          size: "xl",
           wrap: true
         },
         {
@@ -885,97 +887,78 @@ function buildTeamMemberBubble(item = {}) {
     body: {
       type: "box",
       layout: "vertical",
+      spacing: "12px",
+      paddingAll: "18px",
+      contents: [
+        {
+          type: "box",
+          layout: "vertical",
+          backgroundColor: "#F8FAFC",
+          cornerRadius: "14px",
+          paddingAll: "12px",
+          contents: [
+            {
+              type: "text",
+              text: "ข้อมูลสมาชิก",
+              size: "xs",
+              color: "#64748B",
+              weight: "bold"
+            },
+            {
+              type: "text",
+              text: `ชื่อแสดงผล: ${displayName}`,
+              size: "sm",
+              color: "#0F172A",
+              wrap: true,
+              margin: "sm"
+            },
+            {
+              type: "text",
+              text: `USER ID: ${shortUserId}`,
+              size: "sm",
+              color: "#334155",
+              wrap: true,
+              margin: "sm"
+            },
+            {
+              type: "text",
+              text: `ROLE: ${role}`,
+              size: "sm",
+              color: "#334155",
+              wrap: true,
+              margin: "sm"
+            }
+          ]
+        }
+      ]
+    },
+    footer: {
+      type: "box",
+      layout: "vertical",
       spacing: "10px",
-      paddingAll: "16px",
-      contents: [
-        {
-          type: "text",
-          text: `USER ID: ${item.line_user_id || "-"}`,
-          size: "sm",
-          wrap: true,
-          color: "#334155"
-        },
-        {
-          type: "text",
-          text: `ROLE: ${role}`,
-          size: "sm",
-          wrap: true,
-          color: "#334155"
-        }
-      ]
-    },footer: {
-  type: "box",
-  layout: "vertical",
-  spacing: "8px",
-  paddingAll: "16px",
-  contents: [
-    {
-      type: "button",
-      style: "primary",
-      color: "#0B7C86",
-      action: {
-        type: "message",
-        label: "ดูสิทธิ์",
-        text: `ดูสิทธิ์ ${item.line_user_id || ""}`
-      }
-    },
-    {
-      type: "box",
-      layout: "horizontal",
-      spacing: "8px",
+      paddingAll: "18px",
       contents: [
         {
           type: "button",
-          style: "secondary",
-          flex: 1,
+          style: "primary",
+          color: "#0B7C86",
           action: {
             type: "message",
-            label: "เป็น staff",
-            text: `ตั้งสิทธิ์ ${item.line_user_id || ""} staff`
+            label: "จัดการสิทธิ์",
+            text: `เลือกสิทธิ์ ${item.line_user_id || ""}`
           }
         },
         {
           type: "button",
           style: "secondary",
-          flex: 1,
           action: {
             type: "message",
-            label: "เป็น viewer",
-            text: `ตั้งสิทธิ์ ${item.line_user_id || ""} viewer`
-          }
-        }
-      ]
-    },
-    {
-      type: "box",
-      layout: "horizontal",
-      spacing: "8px",
-      contents: [
-        {
-          type: "button",
-          style: "secondary",
-          flex: 1,
-          action: {
-            type: "message",
-            label: "เป็น admin",
-            text: `ตั้งสิทธิ์ ${item.line_user_id || ""} admin`
-          }
-        },
-        {
-          type: "button",
-          style: "secondary",
-          color: "#FEE2E2",
-          flex: 1,
-          action: {
-            type: "message",
-            label: "ลบทีม",
-            text: `ลบทีม ${item.line_user_id || ""}`
+            label: "ดูสิทธิ์ปัจจุบัน",
+            text: `ดูสิทธิ์ ${item.line_user_id || ""}`
           }
         }
       ]
     }
-  ]
-}
   };
 }
 function buildTeamDirectoryFlex(list = []) {
