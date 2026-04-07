@@ -5157,67 +5157,7 @@ if (/^ดูสิทธิ์\s+/i.test(text)) {
   }
 
   continue;
-}
-if (/^ดูสิทธิ์\s+/i.test(text)) {
-  if (!isGroupEvent(event) || !isAllowedTeamGroup(event)) {
-    await safeReply(replyToken, [
-      { type: "text", text: "คำสั่งนี้ใช้ได้เฉพาะในกลุ่มทีมงานเท่านั้น" }
-    ]);
-    continue;
-  }
 
-  if (!(await isAdmin(userId))) {
-    await safeReply(replyToken, [
-      { type: "text", text: "เฉพาะผู้ดูแลระบบ (admin) เท่านั้นที่ใช้คำสั่งนี้ได้" }
-    ]);
-    continue;
-  }
-
-  const targetUserId = text.replace(/^ดูสิทธิ์\s+/i, "").trim();
-
-  if (!/^U[a-zA-Z0-9]+$/.test(targetUserId)) {
-    await safeReply(replyToken, [{
-      type: "text",
-      text:
-        "รูปแบบคำสั่งไม่ถูกต้อง\n\n" +
-        "ใช้รูปแบบ:\n" +
-        "ดูสิทธิ์ USER_ID\n\n" +
-        "ตัวอย่าง:\n" +
-        "ดูสิทธิ์ U1234567890abcdef"
-    }]);
-    continue;
-  }
-
-  try {
-    const record = await getLineUserRoleRecord(targetUserId);
-
-    if (!record || record.is_active === false) {
-      await safeReply(replyToken, [{
-        type: "text",
-        text:
-          "ไม่พบสิทธิ์ที่ใช้งานอยู่สำหรับ USER นี้\n\n" +
-          `USER ID: ${targetUserId}\n` +
-          "ROLE: guest / ยังไม่มีสิทธิ์"
-      }]);
-      continue;
-    }
-
-    await safeReply(replyToken, [{
-      type: "text",
-      text:
-        "ผลการตรวจสอบสิทธิ์\n\n" +
-        `USER ID: ${record.line_user_id}\n` +
-        `ROLE: ${record.role}\n` +
-        `ACTIVE: ${record.is_active ? "yes" : "no"}`
-    }]);
-  } catch (error) {
-    console.error("CHECK ROLE ERROR:", error);
-    await safeReply(replyToken, [
-      { type: "text", text: "เกิดข้อผิดพลาดในการตรวจสอบสิทธิ์" }
-    ]);
-  }
-
-  continue;
 }
       
 if (text === "คำสั่งเพิ่มทีม") {
