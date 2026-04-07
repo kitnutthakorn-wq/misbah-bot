@@ -4726,6 +4726,32 @@ if (!event.message || event.message.type !== "text") {
 
 const text = String(event.message.text || "").trim();
 const userId = event.source?.userId || "";
+
+// =========================
+// GOLDEN SAFE PATCH: USER DIRECTORY TRACK
+// =========================
+try {
+  const profile = await getUserProfile(userId);
+
+  await supabase
+    .from("line_user_directory")
+    .upsert(
+      {
+        line_user_id: userId,
+        display_name: profile?.displayName || null,
+        picture_url: profile?.pictureUrl || null,
+        source_type: event.source?.type || null,
+        group_id: event.source?.groupId || null,
+        last_seen_at: new Date().toISOString()
+      },
+      { onConflict: "line_user_id" }
+    );
+} catch (err) {
+  console.warn("DIRECTORY TRACK ERROR:", err.message);
+}
+
+const role = await getUserRole(userId);
+      
 const role = await getUserRole(userId);
 
 console.log("EVENT TEXT =", text);
