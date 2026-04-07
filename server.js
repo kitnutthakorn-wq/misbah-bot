@@ -6243,6 +6243,58 @@ if (userId && userStates[userId] === "tracking_case") {
         continue;
       }
 
+if (text.startsWith("เลือกสิทธิ์ ")) {
+  if (role !== "admin") {
+    await safeReply(replyToken, [{ type: "text", text: "❌ เฉพาะ admin เท่านั้น" }]);
+    continue;
+  }
+
+  const targetUserId = String(text.replace("เลือกสิทธิ์ ", "") || "").trim();
+
+  if (!targetUserId) {
+    await safeReply(replyToken, [{ type: "text", text: "❌ ไม่พบ USER ID" }]);
+    continue;
+  }
+
+  try {
+    const { data: userRow, error: userError } = await supabase
+      .from("line_user_directory")
+      .select(`
+        line_user_id,
+        display_name,
+        picture_url,
+        line_user_roles (
+          role,
+          is_active
+        )
+      `)
+      .eq("line_user_id", targetUserId)
+      .maybeSingle();
+
+    if (userError) throw userError;
+
+    const pickerItem = userRow || {
+      line_user_id: targetUserId,
+      display_name: targetUserId,
+      picture_url: "",
+      line_user_roles: [
+        {
+          role: "guest",
+          is_active: true
+        }
+      ]
+    };
+
+    await safeReply(replyToken, [buildRolePickerFlex(pickerItem)]);
+  } catch (err) {
+    console.error("ROLE PICKER ERROR:", err);
+    await safeReply(replyToken, [{ type: "text", text: "❌ เปิดตัวเลือกสิทธิ์ไม่สำเร็จ" }]);
+  }
+
+  continue;
+}
+
+      
       if (text === "สิทธิ์ของฉัน") {
         await safeReply(replyToken, [{ type: "text", text: `สิทธิ์ของคุณคือ: ${role}` }]);
         continue;
