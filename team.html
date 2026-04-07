@@ -576,7 +576,9 @@ async function loadCases() {
   ? data.cases
   : Array.isArray(data)
     ? data
-    : [];
+    : Array.isArray(data?.data)
+      ? data.data
+      : [];
       console.log('LOAD CASES COUNT:', allCases.length, allCases);
     }
   } catch (err) {
