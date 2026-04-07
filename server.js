@@ -728,27 +728,79 @@ function buildTeamMemberBubble(item = {}) {
         }
       ]
     },
-    footer: {
+   footer: {
+  type: "box",
+  layout: "vertical",
+  spacing: "8px",
+  paddingAll: "16px",
+  contents: [
+    {
+      type: "button",
+      style: "primary",
+      color: "#0B7C86",
+      action: {
+        type: "message",
+        label: "ดูสิทธิ์",
+        text: `ดูสิทธิ์ ${item.line_user_id || ""}`
+      }
+    },
+    {
       type: "box",
-      layout: "vertical",
+      layout: "horizontal",
       spacing: "8px",
-      paddingAll: "16px",
       contents: [
         {
           type: "button",
-          style: "primary",
-          color: "#0B7C86",
+          style: "secondary",
+          flex: 1,
           action: {
             type: "message",
-            label: "ดูสิทธิ์",
-            text: `ดูสิทธิ์ ${item.line_user_id || ""}`
+            label: "เป็น staff",
+            text: `ตั้งสิทธิ์ ${item.line_user_id || ""} staff`
+          }
+        },
+        {
+          type: "button",
+          style: "secondary",
+          flex: 1,
+          action: {
+            type: "message",
+            label: "เป็น viewer",
+            text: `ตั้งสิทธิ์ ${item.line_user_id || ""} viewer`
+          }
+        }
+      ]
+    },
+    {
+      type: "box",
+      layout: "horizontal",
+      spacing: "8px",
+      contents: [
+        {
+          type: "button",
+          style: "secondary",
+          flex: 1,
+          action: {
+            type: "message",
+            label: "เป็น admin",
+            text: `ตั้งสิทธิ์ ${item.line_user_id || ""} admin`
+          }
+        },
+        {
+          type: "button",
+          style: "secondary",
+          color: "#FEE2E2",
+          flex: 1,
+          action: {
+            type: "message",
+            label: "ลบทีม",
+            text: `ลบทีม ${item.line_user_id || ""}`
           }
         }
       ]
     }
-  };
+  ]
 }
-
 function buildTeamDirectoryFlex(list = []) {
   const bubbles = (list || []).slice(0, 10).map(buildTeamMemberBubble);
 
