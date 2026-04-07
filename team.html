@@ -541,7 +541,7 @@ async function loadTeamList() {
       return;
     }
 
-const roleText = document.getElementById('userRole')?.textContent?.toLowerCase() || '';
+const roleText = (document.getElementById('userRole')?.textContent || '').toLowerCase();
 const isAdmin = roleText.includes('admin') || roleText.includes('แอดมิน');
 
 root.innerHTML = items.map(m => `
