@@ -5085,7 +5085,7 @@ if (text === "เมนูแอดมิน" || text === "เปิดเมน
   ]);
   continue;
 }
-if (text === "คำสั่งดูสิทธิ์") {
+if (text === "คำสั่งดูสิทธิ์" || text === "ดูสิทธิ์") {
   await safeReply(replyToken, [{
     type: "text",
     text:
