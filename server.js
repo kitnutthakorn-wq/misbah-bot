@@ -4768,6 +4768,42 @@ try {
 // ✅ ใส่ตรงนี้
 const role = await getUserRole(userId);
 
+// =========================
+// ADMIN: TEAM DIRECTORY
+// =========================
+if (text === "ดูทีม") {
+
+  if (!(await isAdmin(userId))) {
+    await safeReply(replyToken, [
+      { type: "text", text: "❌ เฉพาะ admin เท่านั้น" }
+    ]);
+    continue;
+  }
+
+  const list = await getTeamDirectoryList();
+
+  if (!list.length) {
+    await safeReply(replyToken, [
+      { type: "text", text: "⚠️ ยังไม่มีข้อมูลทีม" }
+    ]);
+    continue;
+  }
+
+  const textList = list.map((u, i) => {
+    const role = u.line_user_roles?.[0]?.role || "guest";
+    return `${i + 1}. ${u.display_name || "-"}\nROLE: ${role}`;
+  }).join("\n\n");
+
+  await safeReply(replyToken, [
+    {
+      type: "text",
+      text: "👥 รายชื่อทีม\n\n" + textList
+    }
+  ]);
+
+  continue;
+}      
+      
 console.log("EVENT TEXT =", text);
 console.log("USER ID =", userId);
 console.log("USER ROLE =", role);
