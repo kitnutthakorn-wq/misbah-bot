@@ -4820,12 +4820,10 @@ if (addTeamCommand) {
     continue;
   }
 
-  const currentRecord = await getLineUserRoleRecord(targetUserId);
-  const currentRole = currentRecord?.is_active === false ? "guest" : (currentRecord?.role || "guest");
-  const activeAdminCount = await countActiveAdmins();
-// =========================
-// GUARD: ADMIN ≤ 3
-// =========================
+const currentRecord = await getLineUserRoleRecord(targetUserId);
+const currentRole = currentRecord?.is_active === false ? "guest" : (currentRecord?.role || "guest");
+const activeAdminCount = await countActiveAdmins();
+
 if (newRole === "admin" && currentRole !== "admin" && activeAdminCount >= 3) {
   await safeReply(replyToken, [
     {
@@ -4835,18 +4833,17 @@ if (newRole === "admin" && currentRole !== "admin" && activeAdminCount >= 3) {
   ]);
   continue;
 }
-  // กัน admin คนสุดท้ายถูก downgrade
-  if (currentRole === "admin" && newRole !== "admin" && activeAdminCount <= 1) {
-    await safeReply(replyToken, [
-      { type: "text", text: "ต้องมีผู้ดูแลระบบ (admin) อย่างน้อย 1 คน" }
-    ]);
-    continue;
-  }
 
-  // กัน admin เกิน 3 คน
-  
-  try {
-    await setLineUserRole(targetUserId, newRole);
+// กัน admin คนสุดท้ายถูก downgrade
+if (currentRole === "admin" && newRole !== "admin" && activeAdminCount <= 1) {
+  await safeReply(replyToken, [
+    { type: "text", text: "ต้องมีผู้ดูแลระบบ (admin) อย่างน้อย 1 คน" }
+  ]);
+  continue;
+}
+
+try {
+  await setLineUserRole(targetUserId, newRole);
 
     await safeReply(replyToken, [
       {
