@@ -487,7 +487,28 @@ function setToday() {
     menuVersionChipEl.textContent = CONFIG.MENU_VERSION;
   }
 }
-function bindProfile(profile, roleText){document.getElementById('displayName').textContent=profile?.displayName||'ไม่ทราบชื่อ';document.getElementById('avatar').src=profile?.pictureUrl||'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="100%" height="100%" fill="#dbe3ea"/><text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" font-size="28" fill="#6b7280">TK</text></svg>');document.getElementById('userRole').textContent=roleText;}
+function bindProfile(profile, roleText) {
+  const displayNameEl = document.getElementById('displayName');
+  const avatarEl = document.getElementById('avatar');
+  const userRoleEl = document.getElementById('userRole');
+
+  if (displayNameEl) {
+    displayNameEl.textContent = profile?.displayName || 'ไม่ทราบชื่อ';
+  }
+
+  if (avatarEl) {
+    avatarEl.src =
+      profile?.pictureUrl ||
+      'data:image/svg+xml;charset=UTF-8,' +
+        encodeURIComponent(
+          '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="100%" height="100%" fill="#dbe3ea"/><text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" font-size="28" fill="#6b7280">TK</text></svg>'
+        );
+  }
+
+  if (userRoleEl) {
+    userRoleEl.textContent = roleText || 'ทีมงาน';
+  }
+}
 async function initLiff() {
   if (!CONFIG.LIFF_ID || CONFIG.LIFF_ID === 'PUT_YOUR_LIFF_ID_HERE') {
     currentProfile = { displayName: 'Demo Team Member', pictureUrl: '', userId: 'demo-user' };
