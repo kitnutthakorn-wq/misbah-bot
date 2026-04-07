@@ -541,29 +541,32 @@ async function loadTeamList() {
       return;
     }
 
-    root.innerHTML = items.map(m => `
-      <div class="member-item">
-        <img class="member-avatar" src="${m.pictureUrl || getFallbackAvatar(m.displayName)}" />
+const roleText = document.getElementById('userRole')?.textContent?.toLowerCase() || '';
+const isAdmin = roleText.includes('admin') || roleText.includes('แอดมิน');
 
-        <div class="member-meta">
-          <div class="member-name">${m.displayName || "-"}</div>
-          <div class="member-sub">${m.userId}</div>
-          <div class="member-badges">
-            <span class="badge role-${m.role}">${m.role}</span>
-          </div>
-        </div>
+root.innerHTML = items.map(m => `
+  <div class="member-item">
+    <img class="member-avatar" src="${m.pictureUrl || getFallbackAvatar(m.displayName)}" />
 
-       document.getElementById('userRole')?.textContent.toLowerCase().includes('admin')
-          <button class="btn-secondary"
-            onclick="openEditRoleModal(
-              { userId: '${m.userId}', displayName: '${m.displayName || ''}', pictureUrl: '${m.pictureUrl || ''}' },
-              '${m.role}'
-            )">
-            เปลี่ยนสิทธิ์
-          </button>
-        ` : ''}
+    <div class="member-meta">
+      <div class="member-name">${m.displayName || "-"}</div>
+      <div class="member-sub">${m.userId}</div>
+      <div class="member-badges">
+        <span class="badge role-${m.role}">${m.role}</span>
       </div>
-    `).join('');
+    </div>
+
+    ${isAdmin ? `
+      <button class="btn-secondary"
+        onclick="openEditRoleModal(
+          { userId: '${m.userId}', displayName: '${m.displayName || ''}', pictureUrl: '${m.pictureUrl || ''}' },
+          '${m.role}'
+        )">
+        เปลี่ยนสิทธิ์
+      </button>
+    ` : ''}
+  </div>
+`).join('');
 
   } catch (err) {
     console.error("TEAM LIST ERROR:", err);
