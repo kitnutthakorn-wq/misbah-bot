@@ -841,8 +841,7 @@ function renderCases() {
         </div>
       </div>
 
-      <div class="case-desc">${escapeHtml(item.description)}</div>
-
+     <div class="case-desc">${escapeHtml(item.description || item.problem || '-')}</div>
       <div class="meta-grid">
         <div class="meta-box">
           <strong>จังหวัด</strong>
