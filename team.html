@@ -602,9 +602,12 @@ function bindProfile(profile, roleText) {
         );
   }
 
-  if (userRoleEl) {
-    userRoleEl.textContent = roleText || 'ทีมงาน';
-  }
+  currentRoleName = roleText || "ทีมงาน";
+
+if (userRoleEl) {
+  userRoleEl.textContent = currentRoleName;
+}
+syncTeamManageVisibility();
 }
   
 async function initLiff() {
