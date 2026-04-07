@@ -6317,15 +6317,17 @@ if (text.startsWith("เลือกสิทธิ์ ")) {
 
       try {
   // 🔥 ดึงชื่อจาก DB
-  const { data: userRow } = await supabase
-    .from("line_user_directory")
-    .select("line_user_id, display_name")
-    .eq("line_user_id", targetUserId)
-    .maybeSingle();
+ const cleanUserId = String(targetUserId || "").trim();
 
-  const displayName =
-    userRow?.display_name ||
-    targetUserId;
+const { data: userRow } = await supabase
+  .from("line_user_directory")
+  .select("line_user_id, display_name")
+  .eq("line_user_id", cleanUserId)
+  .maybeSingle();
+
+ const displayName =
+  userRow?.display_name ||
+  cleanUserId;
 
   await setLineUserRole(targetUserId, newRole);
 
