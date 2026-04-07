@@ -727,8 +727,7 @@ function buildTeamMemberBubble(item = {}) {
           color: "#334155"
         }
       ]
-    },
-   footer: {
+    },footer: {
   type: "box",
   layout: "vertical",
   spacing: "8px",
@@ -800,6 +799,8 @@ function buildTeamMemberBubble(item = {}) {
       ]
     }
   ]
+}
+  };
 }
 function buildTeamDirectoryFlex(list = []) {
   const bubbles = (list || []).slice(0, 10).map(buildTeamMemberBubble);
