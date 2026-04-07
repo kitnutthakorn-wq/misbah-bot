@@ -601,6 +601,53 @@ async function loadTeamList() {
   }
 }
 
+// =========================
+// TEAM DIRECTORY (NEW)
+// =========================
+async function loadTeamList() {
+  try {
+    const res = await safeFetchJson(
+      `${CONFIG.API_BASE_URL}/api/team/list`
+    );
+
+    const items = res.members || [];
+    const root = document.getElementById('teamList');
+
+    if (!root) return;
+
+    if (!items.length) {
+      root.innerHTML = `<div class="member-empty">ไม่มีสมาชิกทีม</div>`;
+      return;
+    }
+
+    root.innerHTML = items.map(m => `
+      <div class="member-item">
+        <img class="member-avatar" src="${m.pictureUrl || getFallbackAvatar(m.displayName)}" />
+
+        <div class="member-meta">
+          <div class="member-name">${m.displayName || "-"}</div>
+          <div class="member-sub">${m.userId}</div>
+          <div class="member-badges">
+            <span class="badge role-${m.role}">${m.role}</span>
+          </div>
+        </div>
+
+        ${document.getElementById('userRole')?.textContent.includes('Admin') ? `
+          <button class="btn-secondary"
+            onclick="openEditRoleModal(
+              { userId: '${m.userId}', displayName: '${m.displayName || ''}', pictureUrl: '${m.pictureUrl || ''}' },
+              '${m.role}'
+            )">
+            เปลี่ยนสิทธิ์
+          </button>
+        ` : ''}
+      </div>
+    `).join('');
+
+  } catch (err) {
+    console.error("TEAM LIST ERROR:", err);
+  }
+}  
   
 async function loadCases() {
   try {
