@@ -5095,7 +5095,67 @@ if (text === "คำสั่งดูสิทธิ์") {
   }]);
   continue;
 }
+// =========================
+// VIEW ROLE (ดูสิทธิ์ USER_ID)
+// =========================
+if (/^ดูสิทธิ์\s+/i.test(text)) {
 
+  if (!isGroupEvent(event) || !isAllowedTeamGroup(event)) {
+    await safeReply(replyToken, [
+      { type: "text", text: "คำสั่งนี้ใช้ได้เฉพาะในกลุ่มทีมงานเท่านั้น" }
+    ]);
+    continue;
+  }
+
+  if (!(await isAdmin(userId))) {
+    await safeReply(replyToken, [
+      { type: "text", text: "❌ เฉพาะผู้ดูแลระบบ (admin) เท่านั้นที่ใช้คำสั่งนี้ได้" }
+    ]);
+    continue;
+  }
+
+  const targetUserId = text.replace(/^ดูสิทธิ์\s+/i, "").trim();
+
+  if (!/^U[a-zA-Z0-9]+$/.test(targetUserId)) {
+    await safeReply(replyToken, [
+      { type: "text", text: "❌ USER_ID ไม่ถูกต้อง\nตัวอย่าง: ดูสิทธิ์ Uxxxxxxxxxxxx" }
+    ]);
+    continue;
+  }
+
+  try {
+    const record = await getLineUserRoleRecord(targetUserId);
+
+    if (!record || record.is_active === false) {
+      await safeReply(replyToken, [{
+        type: "text",
+        text:
+          `🔍 ผลการตรวจสอบ\n\n` +
+          `USER: ${targetUserId}\n` +
+          `ROLE: guest\n` +
+          `STATUS: ไม่มีในระบบ`
+      }]);
+      continue;
+    }
+
+    await safeReply(replyToken, [{
+      type: "text",
+      text:
+        `🔍 สิทธิ์ผู้ใช้งาน\n\n` +
+        `USER: ${record.line_user_id}\n` +
+        `ROLE: ${record.role}\n` +
+        `ACTIVE: ${record.is_active ? "yes" : "no"}`
+    }]);
+
+  } catch (err) {
+    console.error("VIEW ROLE ERROR:", err);
+    await safeReply(replyToken, [
+      { type: "text", text: "❌ ตรวจสอบสิทธิ์ไม่สำเร็จ" }
+    ]);
+  }
+
+  continue;
+}
 if (/^ดูสิทธิ์\s+/i.test(text)) {
   if (!isGroupEvent(event) || !isAllowedTeamGroup(event)) {
     await safeReply(replyToken, [
