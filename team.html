@@ -574,9 +574,6 @@ async function loadCases() {
   renderCases();
 }
 
-async function loadActivities() {
-  return loadRecentActivityRealtime();
-}
 async function loadRecentActivityRealtime() {
   try {
     if (CONFIG.API_BASE_URL.includes('your-domain.com')) {
