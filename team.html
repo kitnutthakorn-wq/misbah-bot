@@ -130,6 +130,8 @@
   <div id="teamList" class="member-list"></div>
 </div>
     
+  </section>
+
   <section class="workspace">
     <div>
       <div class="toolbar">
@@ -161,7 +163,7 @@
         </div>
       </div>
     </div>
-</div>
+  </section>
 <section id="memberPickerSection" class="card hidden">
   <div class="headline">
     <div>
@@ -185,7 +187,7 @@
 
     <div id="memberList" class="member-list"></div>
   </div>
-</div>
+</section>
 
 <div id="roleModalBackdrop" class="role-modal-backdrop">
   <div class="role-modal">
@@ -539,7 +541,7 @@ async function loadTeamList() {
           </div>
         </div>
 
-        ${document.getElementById('userRole')?.textContent.toLowerCase().toLowerCase().includes('admin') ? `
+        ${document.getElementById('userRole')?.textContent.includes('Admin') ? `
           <button class="btn-secondary"
             onclick="openEditRoleModal(
               { userId: '${m.userId}', displayName: '${m.displayName || ''}', pictureUrl: '${m.pictureUrl || ''}' },
@@ -574,6 +576,9 @@ async function loadCases() {
   renderCases();
 }
 
+async function loadActivities() {
+  return loadRecentActivityRealtime();
+}
 async function loadRecentActivityRealtime() {
   try {
     if (CONFIG.API_BASE_URL.includes('your-domain.com')) {
