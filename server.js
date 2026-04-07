@@ -613,7 +613,51 @@ async function getTeamDirectoryList() {
 
   return data || [];
 }
+app.get("/api/team/list", async (req, res) => {
+  try {
+    const requesterId = String(req.query.userId || "").trim();
+    const requesterRole = await getUserRole(requesterId);
 
+    if (!["admin", "staff", "viewer"].includes(requesterRole)) {
+      return res.status(403).json({ ok: false, error: "forbidden" });
+    }
+
+    const { data, error } = await supabase
+      .from("line_user_directory")
+      .select(`
+        line_user_id,
+        display_name,
+        picture_url,
+        last_seen_at,
+        line_user_roles (
+          role,
+          is_active
+        )
+      `)
+      .order("last_seen_at", { ascending: false })
+      .limit(100);
+
+    if (error) throw error;
+
+    const members = (data || []).map((row) => {
+      const roles = Array.isArray(row.line_user_roles) ? row.line_user_roles : [];
+      const activeRole = roles.find((r) => r && r.is_active !== false);
+
+      return {
+        userId: row.line_user_id,
+        displayName: row.display_name || row.line_user_id || "-",
+        pictureUrl: row.picture_url || "",
+        role: activeRole?.role || "guest",
+        isActive: activeRole?.is_active !== false
+      };
+    });
+
+    return res.json({ ok: true, members });
+  } catch (error) {
+    console.error("TEAM LIST API ERROR:", error);
+    return res.status(500).json({ ok: false, error: error.message });
+  }
+});
 function getTeamRoleTheme(role = "") {
   const r = String(role || "").toLowerCase();
 
