@@ -845,7 +845,7 @@ function renderCases() {
       <div class="meta-grid">
         <div class="meta-box">
           <strong>จังหวัด</strong>
-          <span>${escapeHtml(item.province || '-')}</span>
+         <span>${escapeHtml(item.province || item.location_text || '-')}</span>
         </div>
         <div class="meta-box">
           <strong>ผู้รับผิดชอบ</strong>
