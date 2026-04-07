@@ -432,11 +432,12 @@ async function saveSelectedTeamMember() {
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          targetUserId: selectedMember.userId,
-          role: selectedMemberRole,
-          actorUserId: currentProfile?.userId || ""
-        })
+       body: JSON.stringify({
+  targetUserId: selectedMember.userId,
+  role: selectedMemberRole,
+  actorUserId: currentProfile?.userId || "",
+  mode: isEditRoleMode ? "edit" : "create"
+})
       }
     );
 
