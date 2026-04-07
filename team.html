@@ -778,8 +778,8 @@ function isTodayCase(item = {}) {
 }
 
 function filteredCases() {
-  const k = document.getElementById('searchInput').value.trim().toLowerCase();
-  const status = document.getElementById('statusFilter').value;
+  const k = document.getElementById('searchInput')?.value?.trim().toLowerCase() || '';
+  const status = document.getElementById('statusFilter')?.value || 'all';
 
   return allCases.filter(item => {
     const hay = [
