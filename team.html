@@ -783,14 +783,14 @@ function filteredCases() {
   const status = document.getElementById('statusFilter')?.value || 'all';
 
   return allCases.filter(item => {
-    const hay = [
-      item.case_code,
-      item.title,
-      item.description,
-      item.province,
-      item.category,
-      item.owner
-    ].join(' ').toLowerCase();
+   const hay = [
+  item.case_code,
+  item.title || item.full_name,
+  item.description || item.problem,
+  item.province || item.location_text,
+  item.category || item.problem_type,
+  item.owner || item.assigned_to || item.assigned_to_name
+].join(' ').toLowerCase();
 
     const matchKeyword = !k || hay.includes(k);
 
