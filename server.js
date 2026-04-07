@@ -4938,6 +4938,19 @@ if (text === "ดูทีม") {
     continue;
   }
 
+  await safeReply(replyToken, [
+    buildTeamDirectoryFlex(list),
+    {
+      type: "text",
+      text:
+        "รายชื่อทีมงาน\n\n" +
+        "กดปุ่ม 'ดูสิทธิ์' ใต้การ์ดแต่ละคนเพื่อเช็คสิทธิ์"
+    }
+  ]);
+
+  continue;
+}
+
   const textList = list.map((u, i) => {
     const role = u.line_user_roles?.[0]?.role || "guest";
     return `${i + 1}. ${u.display_name || "-"}\nROLE: ${role}`;
