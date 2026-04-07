@@ -986,6 +986,7 @@ function connectRealtime() {
       setStatus('Connected');
     };
 
+    
     eventSource.onmessage = async (event) => {
       try {
         const payload = JSON.parse(event.data || '{}');
