@@ -674,6 +674,182 @@ function getTeamRoleTheme(role = "") {
   return { color: "#6B7280", label: "guest" };
 }
 
+function getDisplayNameOrFallback(item = {}) {
+  return String(
+    item.display_name ||
+    item.displayName ||
+    item.userId ||
+    item.line_user_id ||
+    "-"
+  ).trim();
+}
+
+function getShortUserId(userId = "") {
+  const raw = String(userId || "").trim();
+  if (!raw) return "-";
+  if (raw.length <= 14) return raw;
+  return `${raw.slice(0, 8)}...${raw.slice(-4)}`;
+}
+
+function buildRolePickerFlex(item = {}) {
+  const userId = String(item.line_user_id || item.userId || "").trim();
+  const displayName = getDisplayNameOrFallback(item);
+  const role =
+    item.line_user_roles?.[0]?.role ||
+    item.role ||
+    "guest";
+
+  const isActive =
+    item.line_user_roles?.[0]?.is_active !== false &&
+    item.isActive !== false;
+
+  const theme = getTeamRoleTheme(role);
+
+  return {
+    type: "flex",
+    altText: `จัดการสิทธิ์ ${displayName}`,
+    contents: {
+      type: "bubble",
+      size: "mega",
+      header: {
+        type: "box",
+        layout: "vertical",
+        backgroundColor: theme.color,
+        paddingAll: "18px",
+        contents: [
+          {
+            type: "text",
+            text: "ROLE PICKER",
+            color: "#DFF7FA",
+            size: "xs",
+            weight: "bold",
+            letterSpacing: "2px"
+          },
+          {
+            type: "text",
+            text: displayName,
+            color: "#FFFFFF",
+            size: "xl",
+            weight: "bold",
+            wrap: true,
+            margin: "sm"
+          },
+          {
+            type: "text",
+            text: `${theme.label} • ${isActive ? "ใช้งานอยู่" : "ปิดการใช้งาน"}`,
+            color: "#F8FAFC",
+            size: "sm",
+            wrap: true,
+            margin: "sm"
+          }
+        ]
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "12px",
+        paddingAll: "18px",
+        contents: [
+          {
+            type: "box",
+            layout: "vertical",
+            backgroundColor: "#F8FAFC",
+            cornerRadius: "14px",
+            paddingAll: "12px",
+            contents: [
+              {
+                type: "text",
+                text: "ข้อมูลผู้ใช้งาน",
+                size: "xs",
+                color: "#64748B",
+                weight: "bold"
+              },
+              {
+                type: "text",
+                text: `ชื่อ: ${displayName}`,
+                size: "sm",
+                color: "#0F172A",
+                wrap: true,
+                margin: "sm"
+              },
+              {
+                type: "text",
+                text: `USER ID: ${getShortUserId(userId)}`,
+                size: "sm",
+                color: "#334155",
+                wrap: true,
+                margin: "sm"
+              },
+              {
+                type: "text",
+                text: `ROLE ปัจจุบัน: ${role}`,
+                size: "sm",
+                color: "#334155",
+                wrap: true,
+                margin: "sm"
+              }
+            ]
+          },
+          {
+            type: "text",
+            text: "เลือกสิทธิ์ที่ต้องการเปลี่ยน",
+            size: "sm",
+            weight: "bold",
+            color: "#0F172A"
+          }
+        ]
+      },
+      footer: {
+        type: "box",
+        layout: "vertical",
+        spacing: "10px",
+        paddingAll: "18px",
+        contents: [
+          {
+            type: "button",
+            style: "primary",
+            color: "#DC2626",
+            action: {
+              type: "message",
+              label: "ตั้งเป็น Admin",
+              text: `ตั้งสิทธิ์ ${userId} admin`
+            }
+          },
+          {
+            type: "button",
+            style: "primary",
+            color: "#F97316",
+            action: {
+              type: "message",
+              label: "ตั้งเป็น Staff",
+              text: `ตั้งสิทธิ์ ${userId} staff`
+            }
+          },
+          {
+            type: "button",
+            style: "primary",
+            color: "#0B7C86",
+            action: {
+              type: "message",
+              label: "ตั้งเป็น Viewer",
+              text: `ตั้งสิทธิ์ ${userId} viewer`
+            }
+          },
+          {
+            type: "button",
+            style: "secondary",
+            action: {
+              type: "message",
+              label: "ลบออกจากทีม",
+              text: `ลบทีม ${userId}`
+            }
+          }
+        ]
+      }
+    }
+  };
+}
+
 function buildTeamMemberBubble(item = {}) {
   const role = item.line_user_roles?.[0]?.role || "guest";
   const isActive = item.line_user_roles?.[0]?.is_active !== false;
