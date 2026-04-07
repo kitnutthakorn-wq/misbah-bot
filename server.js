@@ -6315,15 +6315,37 @@ if (text.startsWith("เลือกสิทธิ์ ")) {
         const targetUserId = parts[1].trim();
         const newRole = parts[2].trim().toLowerCase();
 
-        try {
-          await setLineUserRole(targetUserId, newRole);
-          await safeReply(replyToken, [{ type: "text", text: `✅ ตั้งสิทธิ์สำเร็จ\nUSER ID: ${targetUserId}\nROLE: ${newRole}` }]);
-        } catch (err) {
-          console.error("SET ROLE ERROR:", err);
-          await safeReply(replyToken, [{ type: "text", text: "ตั้งสิทธิ์ไม่สำเร็จ\nสิทธิ์ที่ใช้ได้: admin, staff, viewer, guest" }]);
-        }
-        continue;
-      }
+      try {
+  // 🔥 ดึงชื่อจาก DB
+  const { data: userRow } = await supabase
+    .from("line_user_directory")
+    .select("line_user_id, display_name")
+    .eq("line_user_id", targetUserId)
+    .maybeSingle();
+
+  const displayName =
+    userRow?.display_name ||
+    targetUserId;
+
+  await setLineUserRole(targetUserId, newRole);
+
+  await safeReply(replyToken, [{
+    type: "text",
+    text:
+      `✅ ตั้งสิทธิ์สำเร็จ\n` +
+      `ชื่อ: ${displayName}\n` +
+      `USER ID: ${targetUserId}\n` +
+      `ROLE: ${newRole}`
+  }]);
+} catch (err) {
+  console.error("SET ROLE ERROR:", err);
+  await safeReply(replyToken, [{
+    type: "text",
+    text: "ตั้งสิทธิ์ไม่สำเร็จ\nสิทธิ์ที่ใช้ได้: admin, staff, viewer, guest"
+  }]);
+}
+continue;
+}
 
       if (text === "เมนู" || text === "กลับสู่เมนูหลัก") {
         await safeReply(replyToken, [buildMainMenuText(role)]);
