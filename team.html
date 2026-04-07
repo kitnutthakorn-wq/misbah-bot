@@ -550,7 +550,10 @@ async function loadTeamRole() {
     );
 
     if (data?.roleName) {
-      document.getElementById('userRole').textContent = data.roleName;
+    if (data?.roleName) {
+  const userRoleEl = document.getElementById('userRole');
+  if (userRoleEl) userRoleEl.textContent = data.roleName;
+}
     }
   } catch (err) {
     console.warn(err.message);
