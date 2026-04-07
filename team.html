@@ -113,13 +113,103 @@
 <body>
 <div id="loading" class="loading">กำลังเปิด Team Workspace Misbah FD...</div>
 <div id="app" class="app hidden">
-  <div class="topbar">
-    <div class="brand-wrap">
-      <div class="brand-badge">TK</div>
-      <div><h1>Team Workspace Misbah FD</h1><p>Role-based • Realtime • Unified Theme • Golden-safe flow</p></div>
+ <div class="topbar">
+  <div class="brand-wrap">
+    <div class="brand-badge">TK</div>
+    <div>
+      <h1>Team Workspace Misbah FD</h1>
+      <p>Role-based • Realtime • Unified Theme • Golden-safe flow</p>
     </div>
-      
-<div class="card" style="margin-top:16px">
+  </div>
+
+  <div class="profile-card">
+    <img id="avatar" class="avatar" alt="profile" />
+    <div class="profile-meta">
+      <strong id="displayName">กำลังโหลด...</strong>
+      <span id="userRole">กำลังตรวจสอบสิทธิ์</span>
+    </div>
+  </div>
+</div>
+
+<section class="hero">
+  <div class="card hero-card">
+    <div class="headline">
+      <div>
+        <h2>ภาพรวมการทำงานวันนี้</h2>
+        <p>ทีมเดียวกับ dashboard / report / team workspace</p>
+      </div>
+      <span id="todayDate" class="badge done">-</span>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label">เคสใหม่</div>
+        <div id="statNew" class="stat-value">0</div>
+        <div class="stat-note">รอรับเคส</div>
+      </div>
+
+      <div class="stat">
+        <div class="stat-label">กำลังดำเนินการ</div>
+        <div id="statProgress" class="stat-value">0</div>
+        <div class="stat-note">กำลังติดตาม</div>
+      </div>
+
+      <div id="urgentStatCard" class="stat">
+        <div class="stat-label">เคสด่วน</div>
+        <div id="statUrgent" class="stat-value">0</div>
+        <div class="stat-note">ต้องจัดการก่อน</div>
+      </div>
+
+      <div class="stat">
+        <div class="stat-label">ปิดเคสแล้ว</div>
+        <div id="statDone" class="stat-value">0</div>
+        <div class="stat-note">สำเร็จในรอบนี้</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-stack">
+    <div class="card">
+      <div class="headline">
+        <div>
+          <h2>Quick Actions</h2>
+          <p>โหมดทีมงานแบบ PRO MAX</p>
+        </div>
+      </div>
+
+      <div class="quick-actions">
+        <button class="btn-primary" onclick="renderCases()">รีเฟรชเคส</button>
+        <button class="btn-secondary" onclick="applyPresetFilter('urgent')">ดูเฉพาะเคสด่วน</button>
+        <button class="btn-secondary" onclick="applyPresetFilter('new')">ดูเฉพาะเคสใหม่</button>
+        <button class="btn-secondary" onclick="filterTodayCases()">เคสวันนี้</button>
+        <button class="btn-update qa-full" onclick="openCaseUpdateCenter()">อัปเดตเคส</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="role-chip">
+        <strong>Environment</strong>
+        <span id="envChip">กำลังตรวจสอบ...</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="role-chip">
+        <strong>Menu Version</strong>
+        <span id="menuVersionChip">-</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="role-chip">
+        <strong>Realtime</strong>
+        <span id="realtimeStatus">กำลังเชื่อมต่อ...</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div id="teamManageCard" class="card" style="margin-bottom:16px">
   <div class="headline">
     <div>
       <h2>จัดการทีม</h2>
