@@ -460,6 +460,8 @@ function closeRoleModal(){
   document.getElementById('roleModalBackdrop').style.display = 'none';
   selectedMember = null;
   selectedMemberRole = "viewer";
+  isEditRoleMode = false;
+  document.getElementById('saveTeamBtn').textContent = 'บันทึกทีม';
 }
 
 function closeMemberPicker(){
