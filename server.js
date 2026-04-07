@@ -4950,21 +4950,6 @@ if (text === "ดูทีม") {
 
   continue;
 }
-
-  const textList = list.map((u, i) => {
-    const role = u.line_user_roles?.[0]?.role || "guest";
-    return `${i + 1}. ${u.display_name || "-"}\nROLE: ${role}`;
-  }).join("\n\n");
-
-  await safeReply(replyToken, [
-    {
-      type: "text",
-      text: "👥 รายชื่อทีม\n\n" + textList
-    }
-  ]);
-
-  continue;
-}      
       
 console.log("EVENT TEXT =", text);
 console.log("USER ID =", userId);
