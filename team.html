@@ -567,6 +567,7 @@ async function loadCases() {
         `${CONFIG.API_BASE_URL}${CONFIG.CASES_ENDPOINT}`
       );
       allCases = Array.isArray(data?.cases) ? data.cases : [];
+      console.log('LOAD CASES COUNT:', allCases.length, allCases);
     }
   } catch (err) {
     allCases = demoCases;
