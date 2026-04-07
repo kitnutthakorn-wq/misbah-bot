@@ -435,7 +435,8 @@ async function saveSelectedTeamMember() {
     );
 
    alert(isEditRoleMode ? "✅ เปลี่ยนสิทธิ์สำเร็จ" : "✅ เพิ่มทีมสำเร็จ");
-    closeRoleModal();
+closeRoleModal();
+await loadTeamList(); // 🔥 เพิ่มตรงนี้
 
   } catch (err) {
     alert("❌ บันทึกไม่สำเร็จ: " + err.message);
