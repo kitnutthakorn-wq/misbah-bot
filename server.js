@@ -4765,7 +4765,9 @@ try {
 } catch (err) {
   console.warn("DIRECTORY TRACK ERROR:", err.message);
 }
-      
+// ✅ ใส่ตรงนี้
+const role = await getUserRole(userId);
+
 console.log("EVENT TEXT =", text);
 console.log("USER ID =", userId);
 console.log("USER ROLE =", role);
