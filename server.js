@@ -4823,7 +4823,18 @@ if (addTeamCommand) {
   const currentRecord = await getLineUserRoleRecord(targetUserId);
   const currentRole = currentRecord?.is_active === false ? "guest" : (currentRecord?.role || "guest");
   const activeAdminCount = await countActiveAdmins();
-
+// =========================
+// GUARD: ADMIN ≤ 3
+// =========================
+if (newRole === "admin" && currentRole !== "admin" && activeAdminCount >= 3) {
+  await safeReply(replyToken, [
+    {
+      type: "text",
+      text: "❌ องค์กรนี้กำหนด admin ได้สูงสุด 3 คน"
+    }
+  ]);
+  continue;
+}
   // กัน admin คนสุดท้ายถูก downgrade
   if (currentRole === "admin" && newRole !== "admin" && activeAdminCount <= 1) {
     await safeReply(replyToken, [
