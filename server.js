@@ -5113,6 +5113,43 @@ if (text === "เมนูทีมงาน") {
 
   continue;
 }
+
+const setRoleMatch = String(text || "").trim().match(/^ตั้งสิทธิ์\s+(U[a-zA-Z0-9]+)\s+(admin|staff|viewer)$/i);
+if (setRoleMatch) {
+  if (!(await isAdmin(userId))) {
+    await safeReply(replyToken, [
+      { type: "text", text: "❌ เฉพาะ admin เท่านั้น" }
+    ]);
+    continue;
+  }
+
+  const targetUserId = setRoleMatch[1];
+  const newRole = String(setRoleMatch[2] || "").toLowerCase();
+
+  if (newRole === "admin") {
+    const activeAdmins = await countActiveAdmins();
+    const currentRecord = await getLineUserRoleRecord(targetUserId);
+
+    if (!currentRecord || currentRecord.role !== "admin" || currentRecord.is_active === false) {
+      if (activeAdmins >= 3) {
+        await safeReply(replyToken, [
+          { type: "text", text: "❌ ระบบอนุญาต admin ได้สูงสุด 3 คน" }
+        ]);
+        continue;
+      }
+    }
+  }
+
+  await setLineUserRole(targetUserId, newRole);
+
+  await safeReply(replyToken, [
+    {
+      type: "text",
+      text: `✅ ตั้งสิทธิ์สำเร็จ\nUSER: ${targetUserId}\nROLE: ${newRole}`
+    }
+  ]);
+  continue;
+}
       
 const addTeamCommand = parseAddTeamCommand(text);
 if (addTeamCommand) {
