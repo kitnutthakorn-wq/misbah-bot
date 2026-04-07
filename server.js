@@ -588,16 +588,6 @@ async function getLineUserRoleRecord(lineUserId) {
   if (error) throw error;
   return data || null;
 }
-async function getLineUserRoleRecord(lineUserId) {
-  const { data, error } = await supabase
-    .from("line_user_roles")
-    .select("line_user_id, role, is_active")
-    .eq("line_user_id", lineUserId)
-    .maybeSingle();
-
-  if (error) throw error;
-  return data || null;
-}
 
 // =========================
 // ADMIN: GET TEAM DIRECTORY
