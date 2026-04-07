@@ -219,8 +219,6 @@
 
   <div id="teamList" class="member-list"></div>
 </div>
-    
- 
 
   <section class="workspace">
     <div>
@@ -390,7 +388,7 @@ async function safeFetchJson(url, options={}) {
 async function loadGroupMembersForPicker() {
   try {
     const res = await safeFetchJson(
-      `${CONFIG.API_BASE_URL}${CONFIG.GROUP_MEMBERS_ENDPOINT}`
+      `${CONFIG.API_BASE_URL}${CONFIG.GROUP_MEMBERS_ENDPOINT}?userId=${encodeURIComponent(currentProfile?.userId || "")}`
     );
 
     memberPickerItems = res.members || [];
@@ -547,7 +545,19 @@ function closeMemberPicker(){
   
 function capitalize(s){
   return s.charAt(0).toUpperCase() + s.slice(1);
-}  
+}
+
+function isAdminRoleName(value = "") {
+  const t = String(value || "").toLowerCase();
+  return t.includes("admin") || t.includes("แอดมิน");
+}
+
+function syncTeamManageVisibility() {
+  const card = document.getElementById("teamManageCard");
+  if (!card) return;
+  card.classList.toggle("hidden", !isAdminRoleName(currentRoleName));
+}
+  
 function getViewMode() {
   const params = new URLSearchParams(window.location.search);
   return (params.get("view") || "").trim();
