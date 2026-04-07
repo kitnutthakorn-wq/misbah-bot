@@ -686,7 +686,7 @@ async function loadTeamList() {
           </div>
         </div>
 
-        ${document.getElementById('userRole')?.textContent.includes('Admin') ? `
+        ${isAdminRoleName(currentRoleName) ? `
           <button class="btn-secondary"
             onclick="openEditRoleModal(
               { userId: '${m.userId}', displayName: '${m.displayName || ''}', pictureUrl: '${m.pictureUrl || ''}' },
