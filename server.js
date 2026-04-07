@@ -491,7 +491,14 @@ async function setLineUserRole(lineUserId, role) {
 
   const { data, error } = await supabase
     .from("line_user_roles")
-    .upsert({ line_user_id: lineUserId, role }, { onConflict: "line_user_id" })
+    .upsert(
+      {
+        line_user_id: lineUserId,
+        role,
+        is_active: true
+      },
+      { onConflict: "line_user_id" }
+    )
     .select()
     .single();
 
