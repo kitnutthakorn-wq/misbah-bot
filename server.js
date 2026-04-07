@@ -4813,7 +4813,6 @@ if (addTeamCommand) {
 
   const { targetUserId, role: newRole } = addTeamCommand;
 
-  // กันยิงตัวเอง
   if (targetUserId === userId) {
     await safeReply(replyToken, [
       { type: "text", text: "ไม่สามารถเปลี่ยนสิทธิ์ของตัวเองได้" }
@@ -4821,10 +4820,11 @@ if (addTeamCommand) {
     continue;
   }
 
-  // กัน admin เหลือ 0 คน (กรณี downgrade admin คนสุดท้าย)
-  const currentRole = await getUserRole(targetUserId);
+  const currentRecord = await getLineUserRoleRecord(targetUserId);
+  const currentRole = currentRecord?.is_active === false ? "guest" : (currentRecord?.role || "guest");
   const activeAdminCount = await countActiveAdmins();
 
+  // กัน admin คนสุดท้ายถูก downgrade
   if (currentRole === "admin" && newRole !== "admin" && activeAdminCount <= 1) {
     await safeReply(replyToken, [
       { type: "text", text: "ต้องมีผู้ดูแลระบบ (admin) อย่างน้อย 1 คน" }
@@ -4832,19 +4832,16 @@ if (addTeamCommand) {
     continue;
   }
 
-  try {
-    await supabase
-      .from("line_user_roles")
-      .upsert(
-        {
-          line_user_id: targetUserId,
-          role: newRole,
-          is_active: true,
-        },
-        { onConflict: "line_user_id" }
-      );
+  // กัน admin เกิน 3 คน
+  if (newRole === "admin" && currentRole !== "admin" && activeAdminCount >= 3) {
+    await safeReply(replyToken, [
+      { type: "text", text: "❌ องค์กรนี้กำหนด admin ได้สูงสุด 3 คน" }
+    ]);
+    continue;
+  }
 
-    roleCache.delete(targetUserId);
+  try {
+    await setLineUserRole(targetUserId, newRole);
 
     await safeReply(replyToken, [
       {
