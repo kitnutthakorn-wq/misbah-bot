@@ -614,6 +614,130 @@ async function getTeamDirectoryList() {
   return data || [];
 }
 
+function getTeamRoleTheme(role = "") {
+  const r = String(role || "").toLowerCase();
+
+  if (r === "admin") {
+    return { color: "#DC2626", label: "ผู้ดูแลระบบ" };
+  }
+  if (r === "staff") {
+    return { color: "#F97316", label: "ทีมงาน" };
+  }
+  if (r === "viewer") {
+    return { color: "#0B7C86", label: "ดูได้อย่างเดียว" };
+  }
+
+  return { color: "#6B7280", label: "guest" };
+}
+
+function buildTeamMemberBubble(item = {}) {
+  const role = item.line_user_roles?.[0]?.role || "guest";
+  const isActive = item.line_user_roles?.[0]?.is_active !== false;
+  const theme = getTeamRoleTheme(role);
+
+  return {
+    type: "bubble",
+    size: "mega",
+    header: {
+      type: "box",
+      layout: "vertical",
+      backgroundColor: theme.color,
+      paddingAll: "16px",
+      contents: [
+        {
+          type: "text",
+          text: item.display_name || item.line_user_id || "-",
+          color: "#FFFFFF",
+          weight: "bold",
+          size: "lg",
+          wrap: true
+        },
+        {
+          type: "text",
+          text: `${theme.label} • ${isActive ? "ใช้งานอยู่" : "ปิดการใช้งาน"}`,
+          color: "#F9FAFB",
+          size: "sm",
+          margin: "sm",
+          wrap: true
+        }
+      ]
+    },
+    body: {
+      type: "box",
+      layout: "vertical",
+      spacing: "10px",
+      paddingAll: "16px",
+      contents: [
+        {
+          type: "text",
+          text: `USER ID: ${item.line_user_id || "-"}`,
+          size: "sm",
+          wrap: true,
+          color: "#334155"
+        },
+        {
+          type: "text",
+          text: `ROLE: ${role}`,
+          size: "sm",
+          wrap: true,
+          color: "#334155"
+        }
+      ]
+    },
+    footer: {
+      type: "box",
+      layout: "vertical",
+      spacing: "8px",
+      paddingAll: "16px",
+      contents: [
+        {
+          type: "button",
+          style: "primary",
+          color: "#0B7C86",
+          action: {
+            type: "message",
+            label: "ดูสิทธิ์",
+            text: `ดูสิทธิ์ ${item.line_user_id || ""}`
+          }
+        }
+      ]
+    }
+  };
+}
+
+function buildTeamDirectoryFlex(list = []) {
+  const bubbles = (list || []).slice(0, 10).map(buildTeamMemberBubble);
+
+  return {
+    type: "flex",
+    altText: "รายชื่อทีม",
+    contents: {
+      type: "carousel",
+      contents: bubbles.length
+        ? bubbles
+        : [
+            {
+              type: "bubble",
+              body: {
+                type: "box",
+                layout: "vertical",
+                paddingAll: "18px",
+                contents: [
+                  {
+                    type: "text",
+                    text: "ยังไม่มีข้อมูลทีม",
+                    weight: "bold",
+                    size: "md",
+                    align: "center"
+                  }
+                ]
+              }
+            }
+          ]
+    }
+  };
+}
+
 function getCaseUpdateState(userId) {
   return userStates[userId]?.caseUpdate || null;
 }
