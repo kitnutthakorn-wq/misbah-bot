@@ -833,7 +833,7 @@ function renderCases() {
       <div class="case-top">
         <div>
           <div class="case-code">${escapeHtml(item.case_code)}</div>
-          <div class="case-title">${escapeHtml(item.title)}</div>
+         <div class="case-title">${escapeHtml(item.title || item.full_name || '-')}</div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
           <span class="badge ${workflowStatusClass(item)}">${escapeHtml(workflowStatusLabel(item))}</span>
