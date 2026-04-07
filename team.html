@@ -1031,7 +1031,7 @@ function connectRealtime() {
           return;
         }
 
-        await Promise.all([loadCases(), loadActivities()]);
+        await Promise.all([loadCases(), loadActivities(), loadTeamList()]);
         document.getElementById('realtimeStatus').textContent = 'Connected';
       } catch (err) {
         console.error('SSE parse error', err);
