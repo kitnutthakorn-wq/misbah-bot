@@ -764,15 +764,21 @@ function updateStats() {
     done: allCases.filter(x => isDoneCase(x)).length
   };
 
-  document.getElementById('statNew').textContent = c.new;
-  document.getElementById('statProgress').textContent = c.progress;
-  document.getElementById('statUrgent').textContent = c.urgent;
-  document.getElementById('statDone').textContent = c.done;
+  const set = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
+  };
 
-  document.getElementById('urgentStatCard')
-    .classList.toggle('pulse-urgent', c.urgent > 0);
+  set('statNew', c.new);
+  set('statProgress', c.progress);
+  set('statUrgent', c.urgent);
+  set('statDone', c.done);
+
+  const urgentCard = document.getElementById('urgentStatCard');
+  if (urgentCard) {
+    urgentCard.classList.toggle('pulse-urgent', c.urgent > 0);
+  }
 }
-
 
 function getSelectedRoleLabel() {
   const roleSelect = document.getElementById('roleView');
