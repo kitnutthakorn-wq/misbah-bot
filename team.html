@@ -963,9 +963,14 @@ async function bootstrap() {
 }
 
 function connectRealtime() {
+  const setStatus = (text) => {
+    const el = document.getElementById('realtimeStatus');
+    if (el) el.textContent = text;
+  };
+
   try {
     if (CONFIG.API_BASE_URL.includes('your-domain.com')) {
-      document.getElementById('realtimeStatus').textContent = 'Demo mode';
+      setStatus('Demo mode');
       return;
     }
 
@@ -973,45 +978,34 @@ function connectRealtime() {
     eventSource = new EventSource(`${CONFIG.API_BASE_URL}${CONFIG.TEAM_STREAM_ENDPOINT}`);
 
     eventSource.onopen = () => {
-      document.getElementById('realtimeStatus').textContent = 'Connected';
+      setStatus('Connected');
     };
 
     eventSource.onmessage = async (event) => {
       try {
         const payload = JSON.parse(event.data || '{}');
-        document.getElementById('realtimeStatus').textContent = 'Syncing...';
+        setStatus('Syncing...');
 
         if (payload.type === 'case_update' || payload.type === 'recent_activity_refresh') {
           await loadRecentActivityRealtime();
-          document.getElementById('realtimeStatus').textContent = 'Connected';
+          setStatus('Connected');
           return;
         }
 
         await Promise.all([loadCases(), loadActivities(), loadTeamList()]);
-        document.getElementById('realtimeStatus').textContent = 'Connected';
+        setStatus('Connected');
       } catch (err) {
         console.error('SSE parse error', err);
-        document.getElementById('realtimeStatus').textContent = 'Connected';
+        setStatus('Connected');
       }
     };
 
-    eventSource.addEventListener('case_update', async () => {
-      document.getElementById('realtimeStatus').textContent = 'Syncing...';
-      await loadRecentActivityRealtime();
-      document.getElementById('realtimeStatus').textContent = 'Connected';
-    });
-
-    eventSource.addEventListener('recent_activity_refresh', async () => {
-      document.getElementById('realtimeStatus').textContent = 'Syncing...';
-      await loadRecentActivityRealtime();
-      document.getElementById('realtimeStatus').textContent = 'Connected';
-    });
-
     eventSource.onerror = () => {
-      document.getElementById('realtimeStatus').textContent = 'Reconnect...';
+      setStatus('Reconnect...');
     };
+
   } catch {
-    document.getElementById('realtimeStatus').textContent = 'Unavailable';
+    setStatus('Unavailable');
   }
 }
 
