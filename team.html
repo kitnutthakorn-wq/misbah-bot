@@ -252,7 +252,13 @@ const CONFIG = {
   MENU_VERSION: "PRO-MAX-UI-v1"
 };
 
-let allCases = [], activities = [], currentProfile = null, eventSource = null;
+allCases = Array.isArray(data?.cases)
+  ? data.cases
+  : Array.isArray(data)
+    ? data
+    : Array.isArray(data?.data)
+      ? data.data
+      : [];
 let currentPresetFilter = "all";
 let memberPickerItems = [];
 let selectedMember = null;
