@@ -618,12 +618,6 @@ function getCaseUpdateState(userId) {
   return userStates[userId]?.caseUpdate || null;
 }
 
-function getCaseUpdateState(userId) {
-
-function getCaseUpdateState(userId) {
-  return userStates[userId]?.caseUpdate || null;
-}
-
 function setCaseUpdateState(userId, payload) {
   userStates[userId] = userStates[userId] || {};
   userStates[userId].caseUpdate = payload;
