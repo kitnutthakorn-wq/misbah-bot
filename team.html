@@ -660,9 +660,9 @@ if (data?.roleName) {
 // =========================
 async function loadTeamList() {
   try {
-    const res = await safeFetchJson(
-      `${CONFIG.API_BASE_URL}/api/team/list`
-    );
+   const res = await safeFetchJson(
+  `${CONFIG.API_BASE_URL}/api/team/list?userId=${encodeURIComponent(currentProfile?.userId || "")}`
+);
 
     const items = res.members || [];
     const root = document.getElementById('teamList');
