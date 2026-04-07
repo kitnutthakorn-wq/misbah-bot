@@ -509,6 +509,7 @@ function bindProfile(profile, roleText) {
     userRoleEl.textContent = roleText || 'ทีมงาน';
   }
 }
+  
 async function initLiff() {
   if (!CONFIG.LIFF_ID || CONFIG.LIFF_ID === 'PUT_YOUR_LIFF_ID_HERE') {
     currentProfile = { displayName: 'Demo Team Member', pictureUrl: '', userId: 'demo-user' };
