@@ -588,12 +588,45 @@ async function getLineUserRoleRecord(lineUserId) {
   if (error) throw error;
   return data || null;
 }
-
 async function getLineUserRoleRecord(lineUserId) {
-  ...
+  const { data, error } = await supabase
+    .from("line_user_roles")
+    .select("line_user_id, role, is_active")
+    .eq("line_user_id", lineUserId)
+    .maybeSingle();
+
+  if (error) throw error;
   return data || null;
 }
 
+// =========================
+// ADMIN: GET TEAM DIRECTORY
+// =========================
+async function getTeamDirectoryList() {
+  const { data, error } = await supabase
+    .from("line_user_directory")
+    .select(`
+      line_user_id,
+      display_name,
+      picture_url,
+      line_user_roles (
+        role,
+        is_active
+      )
+    `)
+    .limit(50);
+
+  if (error) {
+    console.error("GET TEAM DIRECTORY ERROR:", error);
+    return [];
+  }
+
+  return data || [];
+}
+
+function getCaseUpdateState(userId) {
+  return userStates[userId]?.caseUpdate || null;
+}
 + // 👇👇👇 วางตรงนี้ EXACT (ระหว่าง 2 function นี้)
 + 
 + // =========================
