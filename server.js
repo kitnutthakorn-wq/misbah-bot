@@ -375,7 +375,27 @@ setInterval(() => {
   }
 }, 60 * 1000);
 
+async function getUserProfile(userId) {
+  if (!userId) return null;
 
+  try {
+    const res = await fetch(`https://api.line.me/v2/bot/profile/${userId}`, {
+      headers: {
+        Authorization: `Bearer ${CHANNEL_ACCESS_TOKEN}`
+      }
+    });
+
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (err) {
+    console.error("GET PROFILE ERROR:", err);
+    return null;
+  }
+}
+
+async function getUserRole(userId) {
+  ...
+}
 async function getUserRole(userId) {
   try {
     if (!userId) return "guest";
