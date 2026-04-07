@@ -392,10 +392,6 @@ async function getUserProfile(userId) {
     return null;
   }
 }
-
-async function getUserRole(userId) {
-  ...
-}
 async function getUserRole(userId) {
   try {
     if (!userId) return "guest";
