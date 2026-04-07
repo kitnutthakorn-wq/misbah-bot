@@ -643,10 +643,14 @@ async function loadTeamRole() {
       `${CONFIG.API_BASE_URL}${CONFIG.TEAM_ROLE_ENDPOINT}?userId=${encodeURIComponent(currentProfile.userId)}`
     );
 
-    if (data?.roleName) {
-      const userRoleEl = document.getElementById('userRole');
-      if (userRoleEl) userRoleEl.textContent = data.roleName;
-    }
+if (data?.roleName) {
+  currentRoleName = data.roleName;
+
+  const userRoleEl = document.getElementById('userRole');
+  if (userRoleEl) userRoleEl.textContent = currentRoleName;
+
+  syncTeamManageVisibility();
+}
   } catch (err) {
     console.warn(err.message);
   }
