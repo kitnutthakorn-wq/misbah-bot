@@ -441,7 +441,7 @@ async function saveSelectedTeamMember() {
       }
     );
 
-    alert("✅ เพิ่มทีมสำเร็จ");
+   alert(isEditRoleMode ? "✅ เปลี่ยนสิทธิ์สำเร็จ" : "✅ เพิ่มทีมสำเร็จ");
     closeRoleModal();
 
   } catch (err) {
