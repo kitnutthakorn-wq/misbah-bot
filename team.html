@@ -113,12 +113,24 @@
 <body>
 <div id="loading" class="loading">กำลังเปิด Team Workspace Misbah FD...</div>
 <div id="app" class="app hidden">
-  <div class="topbar">
-    <div class="brand-wrap">
-      <div class="brand-badge">TK</div>
-      <div><h1>Team Workspace Misbah FD</h1><p>Role-based • Realtime • Unified Theme • Golden-safe flow</p></div>
+ <div class="topbar">
+  <div class="brand-wrap">
+    <div class="brand-badge">TK</div>
+    <div>
+      <h1>Team Workspace Misbah FD</h1>
+      <p>Role-based • Realtime • Unified Theme • Golden-safe flow</p>
     </div>
-      
+  </div>
+
+  <div class="profile-card">
+    <img id="avatar" class="avatar" alt="profile" />
+    <div class="profile-meta">
+      <strong id="displayName">กำลังโหลด...</strong>
+      <span id="userRole">กำลังตรวจสอบสิทธิ์ทีมงาน</span>
+    </div>
+  </div>
+</div>
+
 <div class="card" style="margin-top:16px">
   <div class="headline">
     <div>
@@ -129,8 +141,9 @@
 
   <div id="teamList" class="member-list"></div>
 </div>
-    
-  <section class="workspace">
+
+<section class="workspace">
+  <div>
     <div>
       <div class="toolbar">
         <div class="grow"><input id="searchInput" type="text" placeholder="ค้นหาเลขเคส / ชื่อ / จังหวัด / ประเภทปัญหา" oninput="renderCases()" /></div>
