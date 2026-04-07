@@ -513,14 +513,16 @@ async function initLiff() {
   if (!CONFIG.LIFF_ID || CONFIG.LIFF_ID === 'PUT_YOUR_LIFF_ID_HERE') {
     currentProfile = { displayName: 'Demo Team Member', pictureUrl: '', userId: 'demo-user' };
     bindProfile(currentProfile, 'ทีมงาน (Demo)');
-    document.getElementById('envChip').textContent = 'Demo mode';
+    const envChipEl = document.getElementById('envChip');
+if (envChipEl) envChipEl.textContent = 'Demo mode';
     return;
   }
   await liff.init({ liffId: CONFIG.LIFF_ID });
   if (liff.isInClient()) {
     currentProfile = await liff.getProfile();
     bindProfile(currentProfile, 'ทีมงาน');
-    document.getElementById('envChip').textContent = 'LIFF in LINE';
+    const envChipEl = document.getElementById('envChip');
+if (envChipEl) envChipEl.textContent = 'LIFF in LINE';
     return;
   }
   if (!liff.isLoggedIn()) {
@@ -529,7 +531,8 @@ async function initLiff() {
   }
   currentProfile = await liff.getProfile();
   bindProfile(currentProfile, 'ทีมงาน');
-  document.getElementById('envChip').textContent = 'External browser';
+ const envChipEl = document.getElementById('envChip');
+if (envChipEl) envChipEl.textContent = 'External browser';
 }
 async function loadTeamRole() {
   try {
