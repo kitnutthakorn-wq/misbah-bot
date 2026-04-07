@@ -4844,13 +4844,7 @@ if (newRole === "admin" && currentRole !== "admin" && activeAdminCount >= 3) {
   }
 
   // กัน admin เกิน 3 คน
-  if (newRole === "admin" && currentRole !== "admin" && activeAdminCount >= 3) {
-    await safeReply(replyToken, [
-      { type: "text", text: "❌ องค์กรนี้กำหนด admin ได้สูงสุด 3 คน" }
-    ]);
-    continue;
-  }
-
+  
   try {
     await setLineUserRole(targetUserId, newRole);
 
