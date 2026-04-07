@@ -929,7 +929,7 @@ async function bootstrap() {
 
       await loadGroupMembersForPicker();
     } else {
-      await Promise.all([loadCases(), loadActivities()]);
+     await Promise.all([loadCases(), loadActivities(), loadTeamList()]);
       await loadRecentActivityRealtime();
       connectRealtime();
     }
